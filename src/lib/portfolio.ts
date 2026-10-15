@@ -7,60 +7,61 @@ export type Holding = {
   buyDate: string;
 };
 
-// Покупка совершена 16 декабря 2024 года на сумму ~$40,000.
-// buyPrice — реальная цена закрытия на 16.12.2024 (проверено по историческим
-// данным). currentPrice — ориентировочная котировка, используется как
-// запасной вариант до первого ответа live-API.
-export const BUY_DATE = "2024-12-16";
+// Покупки совершены в разные даты между 15.07.2024 и 09.09.2024 на сумму
+// ~$40,000 суммарно. buyPrice — реальная цена закрытия в день покупки
+// (проверено по историческим данным). currentPrice — ориентировочная
+// котировка, используется как запасной вариант до первого ответа live-API.
+// BUY_DATE — самая ранняя дата покупки в портфеле (для общего графика роста).
+export const BUY_DATE = "2024-07-15";
 
 export const holdings: Holding[] = [
   {
     symbol: "NVDA",
     name: "NVIDIA Corporation",
-    shares: 50,
-    buyPrice: 131.66,
+    shares: 52,
+    buyPrice: 128.09,
     currentPrice: 221.49,
-    buyDate: BUY_DATE,
+    buyDate: "2024-07-15",
   },
   {
     symbol: "AMD",
     name: "Advanced Micro Devices",
-    shares: 53,
-    buyPrice: 126.69,
+    shares: 48,
+    buyPrice: 138.32,
     currentPrice: 570.81,
-    buyDate: BUY_DATE,
+    buyDate: "2024-07-25",
   },
   {
     symbol: "AMZN",
     name: "Amazon.com, Inc.",
-    shares: 29,
-    buyPrice: 232.93,
+    shares: 41,
+    buyPrice: 161.02,
     currentPrice: 254.18,
-    buyDate: BUY_DATE,
+    buyDate: "2024-08-05",
   },
   {
     symbol: "HOOD",
     name: "Robinhood Markets, Inc.",
-    shares: 154,
-    buyPrice: 43.2,
+    shares: 341,
+    buyPrice: 19.55,
     currentPrice: 101.09,
-    buyDate: BUY_DATE,
+    buyDate: "2024-08-15",
   },
   {
     symbol: "IONQ",
     name: "IonQ, Inc.",
-    shares: 159,
-    buyPrice: 41.81,
+    shares: 903,
+    buyPrice: 7.38,
     currentPrice: 31.42,
-    buyDate: BUY_DATE,
+    buyDate: "2024-08-23",
   },
   {
     symbol: "RGTI",
     name: "Rigetti Computing, Inc.",
-    shares: 791,
-    buyPrice: 8.43,
+    shares: 9664,
+    buyPrice: 0.69,
     currentPrice: 11.67,
-    buyDate: BUY_DATE,
+    buyDate: "2024-09-09",
   },
 ];
 
@@ -155,4 +156,124 @@ export function portfolioHistory(now: Date): HistoryPoint[] {
   points[0].value = Math.round(totalCost * 100) / 100;
   points[points.length - 1].value = Math.round(totalValue * 100) / 100;
   return points;
+}
+
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
+  }
+  return h;
+}
+
+// Универсальный "мост" из startValue в endValue за `steps` шагов с
+// правдоподобным случайным шумом (детерминирован по seed — одинаковый
+// результат на сервере и клиенте для одного и того же тикера/таймфрейма).
+export function bridgeSeries(
+  seed: string,
+  startValue: number,
+  endValue: number,
+  steps: number,
+  amplitude = 0.04
+): number[] {
+  const rand = mulberry32(hashString(seed));
+  const logStart = Math.log(Math.max(startValue, 0.01));
+  const logEnd = Math.log(Math.max(endValue, 0.01));
+
+  const noise: number[] = [0];
+  let acc = 0;
+  for (let i = 1; i <= steps; i++) {
+    acc += (rand() - 0.5) * amplitude;
+    noise.push(acc);
+  }
+  const noiseEnd = noise[steps];
+
+  const values: number[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const bridgeNoise = noise[i] - t * noiseEnd;
+    const logValue = logStart + (logEnd - logStart) * t + bridgeNoise;
+    values.push(Math.exp(logValue));
+  }
+  values[0] = startValue;
+  values[values.length - 1] = endValue;
+  return values;
+}
+
+export type Timeframe = "1D" | "1W" | "1M" | "3M" | "6M" | "ALL";
+
+export const TIMEFRAMES: { key: Timeframe; label: string }[] = [
+  { key: "1D", label: "1Д" },
+  { key: "1W", label: "1Н" },
+  { key: "1M", label: "1М" },
+  { key: "3M", label: "3М" },
+  { key: "6M", label: "6М" },
+  { key: "ALL", label: "Всё" },
+];
+
+// График отдельной акции для заданного таймфрейма. Для "ALL" точка отсчёта —
+// реальная цена покупки 16.12.2024. Остальные таймфреймы — смоделированная
+// правдоподобная траектория к текущей цене (без доступа к историческим
+// внутридневным свечам на бесплатном тарифе API).
+export function stockHistory(
+  symbol: string,
+  timeframe: Timeframe,
+  params: {
+    buyPrice: number;
+    buyDate: string;
+    currentPrice: number;
+    prevClose: number | null;
+  },
+  now: Date
+): HistoryPoint[] {
+  const { buyPrice, buyDate, currentPrice, prevClose } = params;
+
+  if (timeframe === "ALL") {
+    const start = new Date(buyDate);
+    const days = Math.max(
+      1,
+      Math.round((now.getTime() - start.getTime()) / 86_400_000)
+    );
+    const values = bridgeSeries(
+      `${symbol}:ALL`,
+      buyPrice,
+      currentPrice,
+      days,
+      0.045
+    );
+    return values.map((value, i) => {
+      const date = new Date(start.getTime() + i * 86_400_000);
+      return { date: date.toISOString().slice(0, 10), value };
+    });
+  }
+
+  const config: Record<
+    Exclude<Timeframe, "ALL">,
+    { steps: number; amplitude: number; startFactor: number; hourly?: boolean }
+  > = {
+    "1D": { steps: 48, amplitude: 0.012, startFactor: 1, hourly: true },
+    "1W": { steps: 56, amplitude: 0.018, startFactor: 0.96 },
+    "1M": { steps: 60, amplitude: 0.03, startFactor: 0.9 },
+    "3M": { steps: 90, amplitude: 0.045, startFactor: 0.82 },
+    "6M": { steps: 120, amplitude: 0.055, startFactor: 0.72 },
+  };
+
+  const { steps, amplitude, startFactor, hourly } = config[timeframe];
+  const startValue =
+    timeframe === "1D" ? (prevClose ?? currentPrice * 0.995) : currentPrice * startFactor;
+  const values = bridgeSeries(
+    `${symbol}:${timeframe}`,
+    startValue,
+    currentPrice,
+    steps,
+    amplitude
+  );
+
+  const stepMs = hourly ? (6.5 * 3600_000) / steps : 86_400_000;
+  const spanStart = now.getTime() - stepMs * steps;
+
+  return values.map((value, i) => ({
+    date: new Date(spanStart + i * stepMs).toISOString(),
+    value,
+  }));
 }

@@ -24,8 +24,9 @@ export default function DemoPage() {
         <div>
           <h1 className="text-2xl font-semibold">Демо-портфель</h1>
           <p className="text-zinc-500 text-sm mt-1">
-            Условная покупка на $40,000 совершена 16 декабря 2024 года.
-            Текущие цены обновляются в реальном времени через Finnhub.
+            Условная покупка на $40,000 совершена в несколько приёмов между
+            15 июля и 9 сентября 2024 года. Текущие цены обновляются в
+            реальном времени через Finnhub.
           </p>
         </div>
 
@@ -35,7 +36,7 @@ export default function DemoPage() {
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="font-semibold">Рост портфеля</h2>
             <span className="text-xs text-zinc-500">
-              16 дек. 2024 — сегодня
+              15 июл. 2024 — сегодня
             </span>
           </div>
           <PortfolioChart costBasis={totalCost} />

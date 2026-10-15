@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { holdings } from "@/lib/portfolio";
 
-type Quote = { symbol: string; price: number | null; updatedAt: number };
+type Quote = {
+  symbol: string;
+  price: number | null;
+  change: number | null;
+  changePct: number | null;
+  prevClose: number | null;
+  updatedAt: number;
+};
 
 // Простой серверный кэш, чтобы не упираться в лимит бесплатного тарифа
 // Finnhub (60 запросов/мин) при частых обращениях нескольких вкладок.
@@ -15,11 +22,30 @@ async function fetchQuote(symbol: string, apiKey: string): Promise<Quote> {
   try {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`Finnhub ${symbol}: HTTP ${res.status}`);
-    const json = (await res.json()) as { c?: number };
+    const json = (await res.json()) as {
+      c?: number;
+      d?: number;
+      dp?: number;
+      pc?: number;
+    };
     const price = typeof json.c === "number" && json.c > 0 ? json.c : null;
-    return { symbol, price, updatedAt: Date.now() };
+    return {
+      symbol,
+      price,
+      change: typeof json.d === "number" ? json.d : null,
+      changePct: typeof json.dp === "number" ? json.dp : null,
+      prevClose: typeof json.pc === "number" ? json.pc : null,
+      updatedAt: Date.now(),
+    };
   } catch {
-    return { symbol, price: null, updatedAt: Date.now() };
+    return {
+      symbol,
+      price: null,
+      change: null,
+      changePct: null,
+      prevClose: null,
+      updatedAt: Date.now(),
+    };
   }
 }
 
