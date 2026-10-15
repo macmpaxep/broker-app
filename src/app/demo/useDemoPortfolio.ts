@@ -9,8 +9,8 @@ import {
 
 const POLL_INTERVAL_MS = 15_000;
 const PROFILE_POLL_INTERVAL_MS = 60 * 60 * 1000;
-const STORAGE_KEY = "vertex-demo-trading-v2";
-export const STARTING_CASH = 5000;
+const STORAGE_KEY = "vertex-demo-trading-v3";
+export const STARTING_CASH = 5936.27;
 
 export type QuoteInfo = {
   price: number | null;
