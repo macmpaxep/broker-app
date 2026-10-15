@@ -113,51 +113,6 @@ function mulberry32(seed: number) {
   };
 }
 
-// Синтетический дневной ряд стоимости портфеля от даты покупки до сегодня.
-// Начинается с суммы вложений, заканчивается текущей рыночной стоимостью,
-// с правдоподобными колебаниями по пути (не биржевые исторические данные).
-// Принимает "сегодня" аргументом, чтобы вычисляться на клиенте (new Date()
-// недетерминирован и не подходит для серверного пререндера).
-export function portfolioHistory(now: Date): HistoryPoint[] {
-  const { totalCost, totalValue } = portfolioSummary();
-  const start = new Date(BUY_DATE);
-  const end = now;
-  const days = Math.max(
-    1,
-    Math.round((end.getTime() - start.getTime()) / 86_400_000)
-  );
-
-  const rand = mulberry32(20241216);
-  const logStart = Math.log(totalCost);
-  const logEnd = Math.log(totalValue);
-
-  // Случайное блуждание, "привязанное" к конечной точке (brownian bridge),
-  // чтобы траектория была плавной, но заканчивалась точно в totalValue.
-  const noise: number[] = [0];
-  let acc = 0;
-  for (let i = 1; i <= days; i++) {
-    acc += (rand() - 0.5) * 0.045;
-    noise.push(acc);
-  }
-  const noiseEnd = noise[days];
-
-  const points: HistoryPoint[] = [];
-  for (let i = 0; i <= days; i++) {
-    const t = i / days;
-    const bridgeNoise = noise[i] - t * noiseEnd;
-    const logValue = logStart + (logEnd - logStart) * t + bridgeNoise;
-    const date = new Date(start.getTime() + i * 86_400_000);
-    points.push({
-      date: date.toISOString().slice(0, 10),
-      value: Math.round(Math.exp(logValue) * 100) / 100,
-    });
-  }
-  // Гарантируем точное совпадение первой и последней точки с реальными цифрами.
-  points[0].value = Math.round(totalCost * 100) / 100;
-  points[points.length - 1].value = Math.round(totalValue * 100) / 100;
-  return points;
-}
-
 function hashString(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
@@ -211,33 +166,44 @@ export const TIMEFRAMES: { key: Timeframe; label: string }[] = [
   { key: "ALL", label: "Всё" },
 ];
 
-// График отдельной акции для заданного таймфрейма. Для "ALL" точка отсчёта —
-// реальная цена покупки 16.12.2024. Остальные таймфреймы — смоделированная
-// правдоподобная траектория к текущей цене (без доступа к историческим
-// внутридневным свечам на бесплатном тарифе API).
-export function stockHistory(
-  symbol: string,
+const SHORT_TF_CONFIG: Record<
+  Exclude<Timeframe, "ALL">,
+  { steps: number; amplitude: number; startFactor: number; hourly?: boolean }
+> = {
+  "1D": { steps: 48, amplitude: 0.012, startFactor: 1, hourly: true },
+  "1W": { steps: 56, amplitude: 0.018, startFactor: 0.96 },
+  "1M": { steps: 60, amplitude: 0.03, startFactor: 0.9 },
+  "3M": { steps: 90, amplitude: 0.045, startFactor: 0.82 },
+  "6M": { steps: 120, amplitude: 0.055, startFactor: 0.72 },
+};
+
+// Генерирует ряд значений для заданного таймфрейма: для коротких окон —
+// смоделированная правдоподобная траектория к endValue (нет доступа к
+// историческим внутридневным свечам на бесплатном тарифе API), для "ALL" —
+// реальная точка отсчёта (allStart/allStartValue) с тем же методом.
+function seriesForTimeframe(
+  seedKey: string,
   timeframe: Timeframe,
   params: {
-    buyPrice: number;
-    buyDate: string;
-    currentPrice: number;
-    prevClose: number | null;
+    endValue: number;
+    prevValue: number | null;
+    allStartValue: number;
+    allStartDate: string;
   },
   now: Date
 ): HistoryPoint[] {
-  const { buyPrice, buyDate, currentPrice, prevClose } = params;
+  const { endValue, prevValue, allStartValue, allStartDate } = params;
 
   if (timeframe === "ALL") {
-    const start = new Date(buyDate);
+    const start = new Date(allStartDate);
     const days = Math.max(
       1,
       Math.round((now.getTime() - start.getTime()) / 86_400_000)
     );
     const values = bridgeSeries(
-      `${symbol}:ALL`,
-      buyPrice,
-      currentPrice,
+      `${seedKey}:ALL`,
+      allStartValue,
+      endValue,
       days,
       0.045
     );
@@ -247,24 +213,13 @@ export function stockHistory(
     });
   }
 
-  const config: Record<
-    Exclude<Timeframe, "ALL">,
-    { steps: number; amplitude: number; startFactor: number; hourly?: boolean }
-  > = {
-    "1D": { steps: 48, amplitude: 0.012, startFactor: 1, hourly: true },
-    "1W": { steps: 56, amplitude: 0.018, startFactor: 0.96 },
-    "1M": { steps: 60, amplitude: 0.03, startFactor: 0.9 },
-    "3M": { steps: 90, amplitude: 0.045, startFactor: 0.82 },
-    "6M": { steps: 120, amplitude: 0.055, startFactor: 0.72 },
-  };
-
-  const { steps, amplitude, startFactor, hourly } = config[timeframe];
+  const { steps, amplitude, startFactor, hourly } = SHORT_TF_CONFIG[timeframe];
   const startValue =
-    timeframe === "1D" ? (prevClose ?? currentPrice * 0.995) : currentPrice * startFactor;
+    timeframe === "1D" ? (prevValue ?? endValue * 0.995) : endValue * startFactor;
   const values = bridgeSeries(
-    `${symbol}:${timeframe}`,
+    `${seedKey}:${timeframe}`,
     startValue,
-    currentPrice,
+    endValue,
     steps,
     amplitude
   );
@@ -276,4 +231,52 @@ export function stockHistory(
     date: new Date(spanStart + i * stepMs).toISOString(),
     value,
   }));
+}
+
+// График отдельной акции для заданного таймфрейма. Для "ALL" точка отсчёта —
+// реальная цена покупки этой акции.
+export function stockHistory(
+  symbol: string,
+  timeframe: Timeframe,
+  params: {
+    buyPrice: number;
+    buyDate: string;
+    currentPrice: number;
+    prevClose: number | null;
+  },
+  now: Date
+): HistoryPoint[] {
+  return seriesForTimeframe(
+    symbol,
+    timeframe,
+    {
+      endValue: params.currentPrice,
+      prevValue: params.prevClose,
+      allStartValue: params.buyPrice,
+      allStartDate: params.buyDate,
+    },
+    now
+  );
+}
+
+// График стоимости всего портфеля для заданного таймфрейма. Для "ALL" —
+// реальная суммарная стоимость вложений (totalCost) на дату самой ранней
+// покупки в портфеле.
+export function portfolioHistoryTF(
+  timeframe: Timeframe,
+  totalValue: number,
+  totalCost: number,
+  now: Date
+): HistoryPoint[] {
+  return seriesForTimeframe(
+    "PORTFOLIO",
+    timeframe,
+    {
+      endValue: totalValue,
+      prevValue: null,
+      allStartValue: totalCost,
+      allStartDate: BUY_DATE,
+    },
+    now
+  );
 }

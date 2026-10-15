@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { holdings } from "@/lib/portfolio";
+import {
+  holdings,
+  portfolioHistoryTF,
+  TIMEFRAMES,
+  type HistoryPoint,
+  type Timeframe,
+} from "@/lib/portfolio";
 import { useDemoPortfolio } from "./useDemoPortfolio";
 import Logo from "./Logo";
+import TimeSeriesChart from "./TimeSeriesChart";
 
 function fmtUsd(n: number) {
   return n.toLocaleString("en-US", {
@@ -12,6 +19,15 @@ function fmtUsd(n: number) {
     currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+  });
+}
+
+function fmtUsdCompact(n: number) {
+  return n.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 }
 
@@ -36,130 +52,193 @@ export default function LivePortfolio() {
 
   const { rows, totalCost, totalValue, totalPnl, totalPnlPct } = summary;
   const isUp = totalPnl >= 0;
+  const pnlColor = isUp ? "var(--vx-positive)" : "var(--vx-negative)";
 
   const [tradeSymbol, setTradeSymbol] = useState(holdings[0].symbol);
   const [tradeQty, setTradeQty] = useState("1");
+  const [timeframe, setTimeframe] = useState<Timeframe>("1M");
+  const [history, setHistory] = useState<HistoryPoint[] | null>(null);
+
+  useEffect(() => {
+    setHistory(portfolioHistoryTF(timeframe, totalValue, totalCost, new Date()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeframe, totalValue, totalCost]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center gap-2 text-xs">
         <span
-          className={`inline-block h-2 w-2 rounded-full ${
-            status === "live"
-              ? "bg-emerald-500 animate-pulse"
-              : status === "stale"
-                ? "bg-amber-500"
-                : status === "error"
-                  ? "bg-red-500"
-                  : "bg-zinc-400"
-          }`}
+          className="inline-block h-1.5 w-1.5 rounded-full"
+          style={{
+            background:
+              status === "live"
+                ? "var(--vx-positive)"
+                : status === "stale"
+                  ? "#ffb84d"
+                  : status === "error"
+                    ? "var(--vx-negative)"
+                    : "var(--vx-text-faint)",
+          }}
         />
-        <span className="text-zinc-500">
+        <span style={{ color: "var(--vx-text-faint)" }}>
           {status === "loading" && "Загрузка котировок..."}
           {status === "live" &&
             `Обновлено ${lastUpdated?.toLocaleTimeString("ru-RU")}`}
-          {status === "stale" &&
-            `Не удалось обновить — показаны последние котировки`}
+          {status === "stale" && "Не удалось обновить — последние котировки"}
           {status === "error" && "Не удалось получить котировки"}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-4">
-          <div className="text-xs text-zinc-500">Портфель</div>
-          <div className="text-lg font-semibold mt-0.5">
-            {fmtUsd(totalValue)}
+      {/* Сводка портфеля */}
+      <div
+        className="rounded-3xl p-5 flex flex-col gap-4"
+        style={{
+          background:
+            "linear-gradient(160deg, var(--vx-surface) 0%, var(--vx-surface-2) 100%)",
+          border: "1px solid var(--vx-border)",
+        }}
+      >
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <div
+              className="text-xs font-medium"
+              style={{ color: "var(--vx-text-faint)" }}
+            >
+              Стоимость портфеля
+            </div>
+            <div className="vx-num text-3xl font-semibold mt-1">
+              {fmtUsd(totalValue)}
+            </div>
+          </div>
+          <div className="text-right">
+            <div
+              className="text-xs font-medium"
+              style={{ color: "var(--vx-text-faint)" }}
+            >
+              P&amp;L
+            </div>
+            <div
+              className="vx-num text-lg font-semibold mt-1 whitespace-nowrap"
+              style={{ color: pnlColor }}
+            >
+              {isUp ? "+" : ""}
+              {fmtUsdCompact(totalPnl)}
+            </div>
+            <div
+              className="vx-num text-xs font-medium"
+              style={{ color: pnlColor }}
+            >
+              {fmtPct(totalPnlPct)}
+            </div>
           </div>
         </div>
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-4">
-          <div className="text-xs text-zinc-500">Вложено</div>
-          <div className="text-lg font-semibold mt-0.5">
-            {fmtUsd(totalCost)}
-          </div>
-        </div>
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-4">
-          <div className="text-xs text-zinc-500">Средства</div>
-          <div className="text-lg font-semibold mt-0.5">{fmtUsd(cash)}</div>
-        </div>
+
         <div
-          className={`rounded-2xl p-4 border ${
-            isUp
-              ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900"
-              : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900"
-          }`}
+          className="grid grid-cols-2 gap-3 pt-3 border-t"
+          style={{ borderColor: "var(--vx-border)" }}
         >
-          <div className="text-xs text-zinc-500">P&amp;L</div>
-          <div
-            className={`text-lg font-semibold mt-0.5 ${
-              isUp
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
-          >
-            {isUp ? "+" : ""}
-            {fmtUsd(totalPnl)}
-            <span className="text-xs font-medium ml-1">
-              ({fmtPct(totalPnlPct)})
-            </span>
+          <div>
+            <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+              Вложено
+            </div>
+            <div className="vx-num text-sm font-medium mt-0.5">
+              {fmtUsd(totalCost)}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+              Свободные средства
+            </div>
+            <div className="vx-num text-sm font-medium mt-0.5">
+              {fmtUsd(cash)}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Компактный список позиций в стиле watchlist */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 overflow-hidden">
+      {/* График роста портфеля с выбором периода */}
+      <div
+        className="rounded-3xl p-4"
+        style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
+      >
+        {history ? (
+          <TimeSeriesChart
+            data={history}
+            timeframe={timeframe}
+            color={pnlColor}
+            label="Стоимость"
+          />
+        ) : (
+          <div
+            className="h-[224px] w-full rounded-2xl animate-pulse"
+            style={{ background: "var(--vx-surface-2)" }}
+          />
+        )}
+        <div className="flex gap-1 mt-2">
+          {TIMEFRAMES.map((tf) => (
+            <button
+              key={tf.key}
+              onClick={() => setTimeframe(tf.key)}
+              className="flex-1 rounded-full py-1.5 text-xs font-semibold transition"
+              style={
+                timeframe === tf.key
+                  ? { background: "var(--vx-brand)", color: "var(--vx-brand-ink)" }
+                  : { color: "var(--vx-text-faint)" }
+              }
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Компактный список позиций */}
+      <div
+        className="rounded-3xl overflow-hidden"
+        style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
+      >
         {holdings.map((base, i) => {
           const row = rows.find((r) => r.symbol === base.symbol);
           const q = quotes[base.symbol];
           const profile = profiles[base.symbol];
           const changePct = q?.changePct ?? null;
           const dayUp = (changePct ?? 0) >= 0;
+          const posUp = row ? row.pnl >= 0 : true;
 
           return (
             <Link
               key={base.symbol}
               href={`/demo/${base.symbol}`}
-              className={`flex items-center gap-3 px-4 py-3 hover:bg-black/[.03] dark:hover:bg-white/[.04] transition ${
-                i !== 0 ? "border-t border-black/5 dark:border-white/5" : ""
-              }`}
+              className="flex items-center gap-3 px-4 py-3.5 transition active:opacity-70"
+              style={{
+                borderTop: i !== 0 ? "1px solid var(--vx-border)" : undefined,
+              }}
             >
               <Logo symbol={base.symbol} logo={profile?.logo} />
 
               <div className="flex-1 min-w-0">
-                <div className="font-semibold leading-tight">
-                  {base.symbol}
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-semibold text-[15px]">{base.symbol}</span>
+                  <span className="vx-num font-semibold text-[15px] tabular-nums">
+                    {fmtUsd(currentPriceFor(base.symbol))}
+                  </span>
                 </div>
-                <div className="text-xs text-zinc-500 truncate leading-tight">
-                  {profile?.name ?? base.name}
-                </div>
-              </div>
-
-              <div className="text-right shrink-0">
-                <div className="font-semibold leading-tight tabular-nums">
-                  {fmtUsd(currentPriceFor(base.symbol))}
-                </div>
-                <div
-                  className={`text-xs leading-tight tabular-nums ${
-                    dayUp
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {changePct != null ? fmtPct(changePct) : "—"}
-                </div>
-              </div>
-
-              <div className="text-right shrink-0 hidden sm:block w-28">
-                <div className="text-xs text-zinc-500 leading-tight">
-                  {row?.shares ?? 0} шт.
-                </div>
-                <div
-                  className={`text-xs font-medium leading-tight tabular-nums ${
-                    row && row.pnl >= 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {row ? `${row.pnl >= 0 ? "+" : ""}${fmtUsd(row.pnl)}` : "—"}
+                <div className="flex items-center justify-between gap-2 mt-0.5">
+                  <span
+                    className="text-xs tabular-nums"
+                    style={{ color: "var(--vx-text-faint)" }}
+                  >
+                    {row?.shares ?? 0} шт. по {fmtUsd(base.buyPrice)}
+                  </span>
+                  <span
+                    className="text-xs font-medium tabular-nums flex items-center gap-1.5"
+                    style={{ color: posUp ? "var(--vx-positive)" : "var(--vx-negative)" }}
+                  >
+                    {row ? fmtUsd(row.marketValue) : "—"}
+                    <span style={{ color: dayUp ? "var(--vx-positive)" : "var(--vx-negative)" }}>
+                      {changePct != null ? fmtPct(changePct) : "—"}
+                    </span>
+                  </span>
                 </div>
               </div>
             </Link>
@@ -167,26 +246,38 @@ export default function LivePortfolio() {
         })}
       </div>
 
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 p-5">
+      {/* Торговая панель */}
+      <div
+        className="rounded-3xl p-5"
+        style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
+      >
         <div className="flex items-baseline justify-between mb-4">
           <h2 className="font-semibold">Торговля (демо)</h2>
           <button
             onClick={reset}
-            className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline underline-offset-2"
+            className="text-xs underline underline-offset-2"
+            style={{ color: "var(--vx-text-faint)" }}
           >
             Сбросить портфель
           </button>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-zinc-500">Тикер</label>
+            <label className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+              Тикер
+            </label>
             <select
               value={tradeSymbol}
               onChange={(e) => {
                 setTradeSymbol(e.target.value);
                 setTradeMsg(null);
               }}
-              className="rounded-lg border border-black/15 dark:border-white/20 bg-transparent px-3 py-2 text-sm"
+              className="rounded-xl px-3 py-2 text-sm"
+              style={{
+                background: "var(--vx-surface-2)",
+                border: "1px solid var(--vx-border)",
+                color: "var(--vx-text)",
+              }}
             >
               {holdings.map((h) => (
                 <option key={h.symbol} value={h.symbol}>
@@ -196,7 +287,9 @@ export default function LivePortfolio() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-zinc-500">Количество</label>
+            <label className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+              Количество
+            </label>
             <input
               type="number"
               min={1}
@@ -205,42 +298,53 @@ export default function LivePortfolio() {
                 setTradeQty(e.target.value);
                 setTradeMsg(null);
               }}
-              className="w-24 rounded-lg border border-black/15 dark:border-white/20 bg-transparent px-3 py-2 text-sm"
+              className="w-24 rounded-xl px-3 py-2 text-sm vx-num"
+              style={{
+                background: "var(--vx-surface-2)",
+                border: "1px solid var(--vx-border)",
+                color: "var(--vx-text)",
+              }}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-zinc-500">Цена сейчас</label>
-            <div className="px-3 py-2 text-sm text-zinc-500">
+            <label className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+              Цена сейчас
+            </label>
+            <div
+              className="px-3 py-2 text-sm vx-num"
+              style={{ color: "var(--vx-text-faint)" }}
+            >
               {fmtUsd(currentPriceFor(tradeSymbol))}
             </div>
           </div>
           <button
             onClick={() => trade(tradeSymbol, "buy", Math.floor(Number(tradeQty)))}
-            className="rounded-full bg-emerald-600 text-white px-5 py-2 text-sm font-medium hover:bg-emerald-700 transition"
+            className="rounded-full px-5 py-2 text-sm font-semibold transition active:opacity-80"
+            style={{ background: "var(--vx-brand)", color: "var(--vx-brand-ink)" }}
           >
             Купить
           </button>
           <button
             onClick={() => trade(tradeSymbol, "sell", Math.floor(Number(tradeQty)))}
-            className="rounded-full bg-red-600 text-white px-5 py-2 text-sm font-medium hover:bg-red-700 transition"
+            className="rounded-full px-5 py-2 text-sm font-semibold transition active:opacity-80"
+            style={{ background: "var(--vx-surface-2)", color: "var(--vx-negative)", border: "1px solid var(--vx-border)" }}
           >
             Продать
           </button>
         </div>
         {tradeMsg && (
           <p
-            className={`text-xs mt-3 ${
-              tradeMsg.type === "error"
-                ? "text-red-600 dark:text-red-400"
-                : "text-emerald-600 dark:text-emerald-400"
-            }`}
+            className="text-xs mt-3"
+            style={{
+              color: tradeMsg.type === "error" ? "var(--vx-negative)" : "var(--vx-positive)",
+            }}
           >
             {tradeMsg.text}
           </p>
         )}
       </div>
 
-      <p className="text-xs text-zinc-400">
+      <p className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
         Котировки и логотипы — через Finnhub, обновляются каждые 15 секунд
         (бесплатный тариф, возможна небольшая задержка). Сделки —
         демонстрационные, хранятся только в этом браузере.

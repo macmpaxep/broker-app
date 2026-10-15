@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   Area,
   AreaChart,
@@ -34,43 +35,53 @@ function fmtTooltipDate(d: string, timeframe: Timeframe) {
   });
 }
 
-export default function StockChart({
+export default function TimeSeriesChart({
   data,
   timeframe,
   color,
+  label = "Цена",
+  height = 224,
 }: {
   data: HistoryPoint[];
   timeframe: Timeframe;
   color: string;
+  label?: string;
+  height?: number;
 }) {
+  const gradientId = useId();
+
   return (
-    <div className="h-56 w-full">
+    <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
           <defs>
-            <linearGradient id="stockFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.32} />
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis dataKey="date" hide />
           <YAxis hide domain={["dataMin", "dataMax"]} />
           <Tooltip
-            formatter={(value) => [fmtUsd(Number(value)), "Цена"]}
-            labelFormatter={(label) => fmtTooltipDate(String(label), timeframe)}
+            formatter={(value) => [fmtUsd(Number(value)), label]}
+            labelFormatter={(l) => fmtTooltipDate(String(l), timeframe)}
             contentStyle={{
-              background: "var(--background)",
-              border: "1px solid rgba(128,128,128,0.3)",
-              borderRadius: 12,
-              fontSize: 13,
+              background: "var(--vx-surface-2)",
+              border: "1px solid var(--vx-border)",
+              borderRadius: 14,
+              fontSize: 12,
+              color: "var(--vx-text)",
+              fontFamily: "var(--font-display)",
             }}
+            itemStyle={{ color: "var(--vx-text)" }}
+            labelStyle={{ color: "var(--vx-text-dim)" }}
           />
           <Area
             type="monotone"
             dataKey="value"
             stroke={color}
             strokeWidth={2}
-            fill="url(#stockFill)"
+            fill={`url(#${gradientId})`}
             isAnimationActive={false}
           />
         </AreaChart>

@@ -3,13 +3,41 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Vertex brand palette — distinct from generic emerald/red fintech look */
+  --vx-bg: #08080c;
+  --vx-surface: #121218;
+  --vx-surface-2: #1a1a23;
+  --vx-border: rgba(255, 255, 255, 0.08);
+  --vx-text: #f3f3f6;
+  --vx-text-dim: #8d8d9c;
+  --vx-text-faint: #5c5c6b;
+
+  --vx-brand: #a3ff3c;
+  --vx-brand-ink: #0c1403;
+  --vx-violet: #8c6bff;
+  --vx-positive: #a3ff3c;
+  --vx-negative: #ff5470;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+
+  --color-vx-bg: var(--vx-bg);
+  --color-vx-surface: var(--vx-surface);
+  --color-vx-surface-2: var(--vx-surface-2);
+  --color-vx-border: var(--vx-border);
+  --color-vx-text: var(--vx-text);
+  --color-vx-text-dim: var(--vx-text-dim);
+  --color-vx-text-faint: var(--vx-text-faint);
+  --color-vx-brand: var(--vx-brand);
+  --color-vx-brand-ink: var(--vx-brand-ink);
+  --color-vx-violet: var(--vx-violet);
+  --color-vx-positive: var(--vx-positive);
+  --color-vx-negative: var(--vx-negative);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +50,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+.vx-num {
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
