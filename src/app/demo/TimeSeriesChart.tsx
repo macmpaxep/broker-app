@@ -4,6 +4,7 @@ import { useId } from "react";
 import {
   Area,
   AreaChart,
+  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,6 +19,15 @@ function fmtUsd(n: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function fmtUsdCompact(n: number) {
+  if (n >= 1000) {
+    return `$${(n / 1000).toLocaleString("en-US", {
+      maximumFractionDigits: n >= 10000 ? 0 : 1,
+    })}k`;
+  }
+  return `$${n.toFixed(0)}`;
 }
 
 function fmtTooltipDate(d: string, timeframe: Timeframe) {
@@ -53,15 +63,32 @@ export default function TimeSeriesChart({
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 4 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.32} />
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
+          <CartesianGrid
+            stroke="var(--vx-border)"
+            vertical={false}
+            strokeDasharray="3 5"
+          />
           <XAxis dataKey="date" hide />
-          <YAxis hide domain={["dataMin", "dataMax"]} />
+          <YAxis
+            domain={["dataMin", "dataMax"]}
+            tickFormatter={fmtUsdCompact}
+            tick={{
+              fill: "var(--vx-text-faint)",
+              fontSize: 11,
+              fontFamily: "var(--font-display)",
+            }}
+            axisLine={false}
+            tickLine={false}
+            width={48}
+            tickCount={5}
+          />
           <Tooltip
             formatter={(value) => [fmtUsd(Number(value)), label]}
             labelFormatter={(l) => fmtTooltipDate(String(l), timeframe)}
