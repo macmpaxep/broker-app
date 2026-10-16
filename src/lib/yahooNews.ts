@@ -1,3 +1,5 @@
+import { getSupabaseAdmin } from "./supabase";
+
 export type NewsItem = {
   uuid: string;
   title: string;
@@ -7,8 +9,12 @@ export type NewsItem = {
   thumbnail: string | null;
 };
 
+// In-memory fallback — используется только если SUPABASE_URL/KEY не
+// настроены (например, локально без .env.local). На проде с настроенным
+// Supabase это не задействуется: кэш там переживает холодные старты и
+// редеплои, в отличие от памяти serverless-инстанса.
 type CacheEntry = { data: NewsItem[]; day: string };
-const cache = new Map<string, CacheEntry>();
+const memoryCache = new Map<string, CacheEntry>();
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -56,8 +62,19 @@ const FEED_QUERIES = ["stock market", "earnings", "Nasdaq"];
 export async function fetchMarketNews(limit = 5): Promise<NewsItem[]> {
   const key = `market:${limit}`;
   const today = todayKey();
-  const cached = cache.get(key);
-  if (cached && cached.day === today) return cached.data;
+  const supabase = getSupabaseAdmin();
+
+  if (supabase) {
+    const { data: row } = await supabase
+      .from("broker_app_news_cache")
+      .select("day, items")
+      .eq("cache_key", key)
+      .maybeSingle();
+    if (row && row.day === today) return row.items as NewsItem[];
+  } else {
+    const cached = memoryCache.get(key);
+    if (cached && cached.day === today) return cached.data;
+  }
 
   const batches = await Promise.all(
     FEED_QUERIES.map((q) => searchYahooNews(q, 10).catch(() => [] as NewsItem[]))
@@ -75,6 +92,12 @@ export async function fetchMarketNews(limit = 5): Promise<NewsItem[]> {
   merged.sort((a, b) => b.publishedAt - a.publishedAt);
   const result = merged.slice(0, limit);
 
-  cache.set(key, { data: result, day: today });
+  if (supabase) {
+    await supabase
+      .from("broker_app_news_cache")
+      .upsert({ cache_key: key, day: today, items: result, updated_at: new Date().toISOString() });
+  } else {
+    memoryCache.set(key, { data: result, day: today });
+  }
   return result;
 }

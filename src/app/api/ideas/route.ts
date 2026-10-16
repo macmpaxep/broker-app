@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchMarketNews, type NewsItem } from "@/lib/yahooNews";
 import { rephraseHeadline } from "@/lib/anthropic";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export type Idea = {
   uuid: string;
@@ -13,17 +14,26 @@ export type Idea = {
   thumbnail: string | null;
 };
 
-// Перефразированные карточки кэшируются по uuid статьи надолго — смысл
+// Перефразированные карточки кэшируются по uuid статьи постоянно (в
+// Supabase, если настроен — иначе в памяти процесса как fallback): смысл
 // идеи не меняется, а повторный вызов модели на каждый опрос страницы был
-// бы бессмысленной тратой. Список "опубликованных" идей обновляется по
-// мере появления новых статей в ленте Yahoo (имитация регулярной публикации).
-const ideaCache = new Map<string, { idea: Idea; ts: number }>();
-const IDEA_TTL_MS = 24 * 60 * 60_000;
+// бы бессмысленной тратой токенов.
+const memoryIdeaCache = new Map<string, Idea>();
 const MAX_ITEMS = 5;
 
 async function buildIdea(news: NewsItem): Promise<Idea | null> {
-  const cached = ideaCache.get(news.uuid);
-  if (cached && Date.now() - cached.ts < IDEA_TTL_MS) return cached.idea;
+  const supabase = getSupabaseAdmin();
+
+  if (supabase) {
+    const { data: row } = await supabase
+      .from("broker_app_idea_cache")
+      .select("idea")
+      .eq("uuid", news.uuid)
+      .maybeSingle();
+    if (row) return row.idea as Idea;
+  } else if (memoryIdeaCache.has(news.uuid)) {
+    return memoryIdeaCache.get(news.uuid)!;
+  }
 
   const rephrased = await rephraseHeadline(news.title, news.publisher);
   if (!rephrased) return null;
@@ -38,7 +48,12 @@ async function buildIdea(news: NewsItem): Promise<Idea | null> {
     publishedAt: news.publishedAt,
     thumbnail: news.thumbnail,
   };
-  ideaCache.set(news.uuid, { idea, ts: Date.now() });
+
+  if (supabase) {
+    await supabase.from("broker_app_idea_cache").upsert({ uuid: news.uuid, idea });
+  } else {
+    memoryIdeaCache.set(news.uuid, idea);
+  }
   return idea;
 }
 
