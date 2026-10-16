@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { holdings, stockHistory, TIMEFRAMES, type Timeframe } from "@/lib/portfolio";
 import { useDemoPortfolio } from "../useDemoPortfolio";
+import { useStockHistory } from "../useHistory";
 import Logo from "../Logo";
 import TimeSeriesChart from "../TimeSeriesChart";
 
@@ -51,21 +52,28 @@ export default function StockDetailClient({ symbol }: { symbol: string }) {
 
   const position = summary.rows.find((r) => r.symbol === symbol);
 
-  const history = useMemo(
-    () =>
-      stockHistory(
-        symbol,
-        timeframe,
-        {
-          buyPrice: base.buyPrice,
-          buyDate: base.buyDate,
-          currentPrice: price || base.currentPrice,
-          prevClose: quote?.prevClose ?? null,
-        },
-        new Date()
-      ),
-    [symbol, timeframe, base, price, quote?.prevClose]
+  const { data: realHistory, error: historyError } = useStockHistory(
+    symbol,
+    timeframe,
+    base?.buyDate ?? ""
   );
+  // Запасной вариант — смоделированная траектория, только если реальные
+  // данные недоступны (например, Yahoo Finance недоступен/лимит).
+  const fallbackHistory =
+    historyError && base
+      ? stockHistory(
+          symbol,
+          timeframe,
+          {
+            buyPrice: base.buyPrice,
+            buyDate: base.buyDate,
+            currentPrice: price || base.currentPrice,
+            prevClose: quote?.prevClose ?? null,
+          },
+          new Date()
+        )
+      : null;
+  const history = realHistory ?? fallbackHistory;
 
   return (
     <>
@@ -118,7 +126,14 @@ export default function StockDetailClient({ symbol }: { symbol: string }) {
           className="rounded-3xl p-4"
           style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
         >
-          <TimeSeriesChart data={history} timeframe={timeframe} color={accent} />
+          {history ? (
+            <TimeSeriesChart data={history} timeframe={timeframe} color={accent} />
+          ) : (
+            <div
+              className="h-[224px] w-full rounded-2xl animate-pulse"
+              style={{ background: "var(--vx-surface-2)" }}
+            />
+          )}
           <div className="flex justify-between mt-3 gap-1">
             {TIMEFRAMES.map((tf) => (
               <button
@@ -135,11 +150,19 @@ export default function StockDetailClient({ symbol }: { symbol: string }) {
               </button>
             ))}
           </div>
-          <p className="text-xs mt-3" style={{ color: "var(--vx-text-faint)" }}>
-            {timeframe === "ALL"
-              ? `С даты условной покупки (${new Date(base.buyDate).toLocaleDateString("ru-RU")}) — смоделированная траектория к текущей цене.`
-              : "Смоделированная траектория для наглядности, не биржевые исторические данные."}
-          </p>
+          {historyError ? (
+            <p
+              className="text-xs mt-3 font-medium"
+              style={{ color: "#ffb84d" }}
+            >
+              ⚠ Не удалось загрузить реальную историю цен — показан
+              приблизительный смоделированный график.
+            </p>
+          ) : (
+            <p className="text-xs mt-3" style={{ color: "var(--vx-text-faint)" }}>
+              Реальные исторические котировки (Yahoo Finance).
+            </p>
+          )}
         </div>
 
         <div

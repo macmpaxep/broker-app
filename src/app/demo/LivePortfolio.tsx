@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
+  BUY_DATE,
   holdings,
   portfolioHistoryTF,
   TIMEFRAMES,
-  type HistoryPoint,
   type Timeframe,
 } from "@/lib/portfolio";
 import { useDemoPortfolio } from "./useDemoPortfolio";
+import { usePortfolioHistory } from "./useHistory";
 import Logo from "./Logo";
 import TimeSeriesChart from "./TimeSeriesChart";
 
@@ -57,12 +58,17 @@ export default function LivePortfolio() {
   const [tradeSymbol, setTradeSymbol] = useState(holdings[0].symbol);
   const [tradeQty, setTradeQty] = useState("1");
   const [timeframe, setTimeframe] = useState<Timeframe>("1M");
-  const [history, setHistory] = useState<HistoryPoint[] | null>(null);
 
-  useEffect(() => {
-    setHistory(portfolioHistoryTF(timeframe, totalValue, totalCost, new Date()));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeframe, totalValue, totalCost]);
+  const { data: realHistory, error: historyError } = usePortfolioHistory(
+    timeframe,
+    BUY_DATE
+  );
+  // Запасной вариант — смоделированная траектория, только если реальные
+  // данные недоступны (например, Yahoo Finance недоступен/лимит).
+  const fallbackHistory = historyError
+    ? portfolioHistoryTF(timeframe, totalValue, totalCost, new Date())
+    : null;
+  const history = realHistory ?? fallbackHistory;
 
   return (
     <div className="flex flex-col gap-5">
@@ -190,6 +196,12 @@ export default function LivePortfolio() {
             </button>
           ))}
         </div>
+        {historyError && (
+          <p className="text-xs mt-3 font-medium" style={{ color: "#ffb84d" }}>
+            ⚠ Не удалось загрузить реальную историю цен — показан
+            приблизительный смоделированный график.
+          </p>
+        )}
       </div>
 
       {/* Компактный список позиций */}
