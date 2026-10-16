@@ -70,8 +70,18 @@ function MenuIcon({ active }: { active: boolean }) {
 }
 
 const ITEMS = [
-  { href: "/demo", label: "Котировки", icon: QuotesIcon, match: (p: string) => p === "/demo" },
-  { href: "/demo", label: "Портфель", icon: PortfolioIcon, match: (p: string) => p.startsWith("/demo/") },
+  {
+    href: "/demo",
+    label: "Котировки",
+    icon: QuotesIcon,
+    match: (p: string) => p === "/demo" || (p.startsWith("/demo/") && !p.startsWith("/demo/portfolio")),
+  },
+  {
+    href: "/demo/portfolio",
+    label: "Портфель",
+    icon: PortfolioIcon,
+    match: (p: string) => p.startsWith("/demo/portfolio"),
+  },
   { href: "/demo", label: "Идеи", icon: IdeasIcon, match: () => false },
   { href: "/", label: "Меню", icon: MenuIcon, match: () => false },
 ];

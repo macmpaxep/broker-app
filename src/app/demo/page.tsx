@@ -1,4 +1,4 @@
-import LivePortfolio from "./LivePortfolio";
+import Quotes from "./Quotes";
 
 export default function DemoPage() {
   return (
@@ -11,9 +11,7 @@ export default function DemoPage() {
           >
             Vertex Capital
           </div>
-          <h1 className="text-2xl font-semibold mt-0.5 vx-num">
-            Демо-портфель
-          </h1>
+          <h1 className="text-2xl font-semibold mt-0.5 vx-num">Котировки</h1>
         </div>
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm shrink-0"
@@ -23,7 +21,7 @@ export default function DemoPage() {
         </div>
       </header>
 
-      <LivePortfolio />
+      <Quotes />
     </main>
   );
 }

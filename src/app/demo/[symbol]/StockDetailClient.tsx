@@ -4,10 +4,20 @@ import { useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { holdings, stockHistory, TIMEFRAMES, type Timeframe } from "@/lib/portfolio";
+import { WATCHLIST } from "@/lib/watchlist";
 import { useDemoPortfolio } from "../useDemoPortfolio";
 import { useStockHistory } from "../useHistory";
 import Logo from "../Logo";
 import TimeSeriesChart from "../TimeSeriesChart";
+
+// Для тикеров без реальной истории покупки (куплены не изначально, а через
+// демо-торговлю, либо вообще не куплены) таймфрейм "Всё" откатывается на
+// последние 2 года реальных котировок вместо конкретной даты сделки.
+function defaultAllStartDate() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 2);
+  return d.toISOString().slice(0, 10);
+}
 
 function fmtUsd(n: number) {
   return n.toLocaleString("en-US", {
@@ -24,6 +34,7 @@ function fmtPct(n: number) {
 
 export default function StockDetailClient({ symbol }: { symbol: string }) {
   const base = holdings.find((h) => h.symbol === symbol);
+  const watchlistEntry = WATCHLIST.find((w) => w.symbol === symbol);
 
   const {
     quotes,
@@ -38,9 +49,13 @@ export default function StockDetailClient({ symbol }: { symbol: string }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
   const [qty, setQty] = useState("1");
 
-  if (!base) {
+  if (!base && !watchlistEntry) {
     notFound();
   }
+
+  const displayName = base?.name ?? watchlistEntry?.name ?? symbol;
+  const fallbackPrice = base?.currentPrice ?? watchlistEntry?.currentPrice ?? 0;
+  const allStartDate = base?.buyDate ?? defaultAllStartDate();
 
   const quote = quotes[symbol];
   const profile = profiles[symbol];
@@ -55,24 +70,23 @@ export default function StockDetailClient({ symbol }: { symbol: string }) {
   const { data: realHistory, error: historyError } = useStockHistory(
     symbol,
     timeframe,
-    base?.buyDate ?? ""
+    allStartDate
   );
   // Запасной вариант — смоделированная траектория, только если реальные
   // данные недоступны (например, Yahoo Finance недоступен/лимит).
-  const fallbackHistory =
-    historyError && base
-      ? stockHistory(
-          symbol,
-          timeframe,
-          {
-            buyPrice: base.buyPrice,
-            buyDate: base.buyDate,
-            currentPrice: price || base.currentPrice,
-            prevClose: quote?.prevClose ?? null,
-          },
-          new Date()
-        )
-      : null;
+  const fallbackHistory = historyError
+    ? stockHistory(
+        symbol,
+        timeframe,
+        {
+          buyPrice: base?.buyPrice ?? (price || fallbackPrice),
+          buyDate: allStartDate,
+          currentPrice: price || fallbackPrice,
+          prevClose: quote?.prevClose ?? null,
+        },
+        new Date()
+      )
+    : null;
   const history = realHistory ?? fallbackHistory;
 
   return (
@@ -100,7 +114,7 @@ export default function StockDetailClient({ symbol }: { symbol: string }) {
             className="text-xs truncate leading-tight"
             style={{ color: "var(--vx-text-faint)" }}
           >
-            {profile?.name ?? base.name}
+            {profile?.name ?? displayName}
           </div>
         </div>
       </header>

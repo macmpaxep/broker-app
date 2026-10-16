@@ -6,8 +6,11 @@ import {
   portfolioSummary,
   type PositionOverride,
 } from "@/lib/portfolio";
+import { WATCHLIST } from "@/lib/watchlist";
 
-const POLL_INTERVAL_MS = 15_000;
+// 30с — список котировок вырос до WATCHLIST.length тикеров, более частый
+// опрос упёрся бы в лимит бесплатного тарифа Finnhub (см. /api/quotes).
+const POLL_INTERVAL_MS = 30_000;
 const PROFILE_POLL_INTERVAL_MS = 60 * 60 * 1000;
 const STORAGE_KEY = "vertex-demo-trading-v3";
 export const STARTING_CASH = 5936.27;
@@ -175,7 +178,9 @@ export function useDemoPortfolio() {
 
   function currentPriceFor(symbol: string) {
     if (quotes[symbol]?.price != null) return quotes[symbol].price as number;
-    return holdings.find((h) => h.symbol === symbol)?.currentPrice ?? 0;
+    const base = holdings.find((h) => h.symbol === symbol);
+    if (base) return base.currentPrice;
+    return WATCHLIST.find((w) => w.symbol === symbol)?.currentPrice ?? 0;
   }
 
   function trade(symbol: string, side: "buy" | "sell", qty: number) {

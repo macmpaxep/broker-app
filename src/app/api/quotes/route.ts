@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { holdings } from "@/lib/portfolio";
+import { WATCHLIST } from "@/lib/watchlist";
 
 type Quote = {
   symbol: string;
@@ -10,10 +10,11 @@ type Quote = {
   updatedAt: number;
 };
 
-// Простой серверный кэш, чтобы не упираться в лимит бесплатного тарифа
-// Finnhub (60 запросов/мин) при частых обращениях нескольких вкладок.
+// Серверный кэш, чтобы не упираться в лимит бесплатного тарифа Finnhub
+// (60 запросов/мин). Список вырос до WATCHLIST.length тикеров, поэтому TTL
+// увеличен: иначе частые опросы с нескольких вкладок выбьют лимит.
 let cache: { data: Quote[]; ts: number } | null = null;
-const CACHE_TTL_MS = 10_000;
+const CACHE_TTL_MS = 30_000;
 
 async function fetchQuote(symbol: string, apiKey: string): Promise<Quote> {
   const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(
@@ -62,7 +63,7 @@ export async function GET() {
     return NextResponse.json({ quotes: cache.data, cached: true });
   }
 
-  const symbols = holdings.map((h) => h.symbol);
+  const symbols = WATCHLIST.map((w) => w.symbol);
   const quotes = await Promise.all(
     symbols.map((symbol) => fetchQuote(symbol, apiKey))
   );

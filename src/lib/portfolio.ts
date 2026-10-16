@@ -1,3 +1,5 @@
+import { WATCHLIST } from "./watchlist";
+
 export type Holding = {
   symbol: string;
   name: string;
@@ -75,21 +77,38 @@ export function withMetrics(h: Holding) {
 
 export type PositionOverride = { shares: number; buyPrice: number };
 
+// Позиции не ограничены исходными 6 акциями — демо позволяет купить любой
+// тикер из общего списка (см. WATCHLIST), поэтому строки портфеля строятся
+// по объединению исходных holdings и всех ключей positionOverrides.
 export function portfolioSummary(
   livePrices?: Record<string, number>,
   positionOverrides?: Record<string, PositionOverride>
 ) {
-  const rows = holdings
-    .map((h) => {
-      const override = positionOverrides?.[h.symbol];
-      const merged = {
-        ...h,
-        ...(override ?? {}),
-        ...(livePrices?.[h.symbol] != null
-          ? { currentPrice: livePrices[h.symbol] }
-          : {}),
+  const symbols = new Set<string>(holdings.map((h) => h.symbol));
+  if (positionOverrides) {
+    for (const symbol of Object.keys(positionOverrides)) symbols.add(symbol);
+  }
+
+  const rows = Array.from(symbols)
+    .map((symbol) => {
+      const base = holdings.find((h) => h.symbol === symbol);
+      const meta = WATCHLIST.find((w) => w.symbol === symbol);
+      const override = positionOverrides?.[symbol];
+
+      const shares = override?.shares ?? base?.shares ?? 0;
+      const buyPrice = override?.buyPrice ?? base?.buyPrice ?? meta?.currentPrice ?? 0;
+      const currentPrice =
+        livePrices?.[symbol] ?? base?.currentPrice ?? meta?.currentPrice ?? buyPrice;
+
+      const h: Holding = {
+        symbol,
+        name: base?.name ?? meta?.name ?? symbol,
+        shares,
+        buyPrice,
+        currentPrice,
+        buyDate: base?.buyDate ?? BUY_DATE,
       };
-      return merged;
+      return h;
     })
     .filter((h) => h.shares > 0)
     .map(withMetrics);

@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   BUY_DATE,
-  holdings,
   portfolioHistoryTF,
   TIMEFRAMES,
   type Timeframe,
 } from "@/lib/portfolio";
+import { WATCHLIST } from "@/lib/watchlist";
 import { useDemoPortfolio } from "./useDemoPortfolio";
 import { usePortfolioHistory } from "./useHistory";
 import Logo from "./Logo";
@@ -46,7 +46,7 @@ export default function LivePortfolio() {
   const isUp = totalPnl >= 0;
   const pnlColor = isUp ? "var(--vx-positive)" : "var(--vx-negative)";
 
-  const [tradeSymbol, setTradeSymbol] = useState(holdings[0].symbol);
+  const [tradeSymbol, setTradeSymbol] = useState(WATCHLIST[0].symbol);
   const [tradeQty, setTradeQty] = useState("1");
   const [timeframe, setTimeframe] = useState<Timeframe>("1M");
 
@@ -200,30 +200,35 @@ export default function LivePortfolio() {
         className="rounded-3xl overflow-hidden"
         style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
       >
-        {holdings.map((base, i) => {
-          const row = rows.find((r) => r.symbol === base.symbol);
-          const q = quotes[base.symbol];
-          const profile = profiles[base.symbol];
+        {rows.length === 0 && (
+          <p className="px-4 py-6 text-sm" style={{ color: "var(--vx-text-faint)" }}>
+            В портфеле пока нет открытых позиций. Купите акцию в разделе
+            «Котировки» или через форму ниже.
+          </p>
+        )}
+        {rows.map((row, i) => {
+          const q = quotes[row.symbol];
+          const profile = profiles[row.symbol];
           const changePct = q?.changePct ?? null;
           const dayUp = (changePct ?? 0) >= 0;
-          const posUp = row ? row.pnl >= 0 : true;
+          const posUp = row.pnl >= 0;
 
           return (
             <Link
-              key={base.symbol}
-              href={`/demo/${base.symbol}`}
+              key={row.symbol}
+              href={`/demo/${row.symbol}`}
               className="flex items-center gap-3 px-4 py-3.5 transition active:opacity-70"
               style={{
                 borderTop: i !== 0 ? "1px solid var(--vx-border)" : undefined,
               }}
             >
-              <Logo symbol={base.symbol} logo={profile?.logo} />
+              <Logo symbol={row.symbol} logo={profile?.logo} />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-semibold text-[15px]">{base.symbol}</span>
+                  <span className="font-semibold text-[15px]">{row.symbol}</span>
                   <span className="vx-num font-semibold text-[15px] tabular-nums">
-                    {fmtUsd(currentPriceFor(base.symbol))}
+                    {fmtUsd(currentPriceFor(row.symbol))}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-0.5">
@@ -231,13 +236,13 @@ export default function LivePortfolio() {
                     className="text-xs tabular-nums"
                     style={{ color: "var(--vx-text-faint)" }}
                   >
-                    {row?.shares ?? 0} шт. по {fmtUsd(base.buyPrice)}
+                    {row.shares} шт. по {fmtUsd(row.buyPrice)}
                   </span>
                   <span
                     className="text-xs font-medium tabular-nums flex items-center gap-1.5"
                     style={{ color: posUp ? "var(--vx-positive)" : "var(--vx-negative)" }}
                   >
-                    {row ? fmtUsd(row.marketValue) : "—"}
+                    {fmtUsd(row.marketValue)}
                     <span style={{ color: dayUp ? "var(--vx-positive)" : "var(--vx-negative)" }}>
                       {changePct != null ? fmtPct(changePct) : "—"}
                     </span>
@@ -282,9 +287,9 @@ export default function LivePortfolio() {
                 color: "var(--vx-text)",
               }}
             >
-              {holdings.map((h) => (
-                <option key={h.symbol} value={h.symbol}>
-                  {h.symbol}
+              {WATCHLIST.map((w) => (
+                <option key={w.symbol} value={w.symbol}>
+                  {w.symbol}
                 </option>
               ))}
             </select>
@@ -348,7 +353,7 @@ export default function LivePortfolio() {
       </div>
 
       <p className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-        Котировки и логотипы — через Finnhub, обновляются каждые 15 секунд
+        Котировки и логотипы — через Finnhub, обновляются каждые 30 секунд
         (бесплатный тариф, возможна небольшая задержка). Сделки —
         демонстрационные, хранятся только в этом браузере.
       </p>

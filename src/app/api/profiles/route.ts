@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { holdings } from "@/lib/portfolio";
+import { WATCHLIST } from "@/lib/watchlist";
 
 type Profile = { symbol: string; logo: string | null; name: string | null };
 
@@ -39,7 +39,7 @@ export async function GET() {
     return NextResponse.json({ profiles: cache.data, cached: true });
   }
 
-  const symbols = holdings.map((h) => h.symbol);
+  const symbols = WATCHLIST.map((w) => w.symbol);
   const profiles = await Promise.all(
     symbols.map((symbol) => fetchProfile(symbol, apiKey))
   );
