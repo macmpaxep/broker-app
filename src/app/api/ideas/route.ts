@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { fetchMarketNews, type NewsItem } from "@/lib/yahooNews";
+import { NextRequest, NextResponse } from "next/server";
+import { ensureTodayNewsFetched, type NewsItem } from "@/lib/yahooNews";
 import { rephraseHeadline } from "@/lib/anthropic";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -14,12 +14,11 @@ export type Idea = {
   thumbnail: string | null;
 };
 
-// Перефразированные карточки кэшируются по uuid статьи постоянно (в
-// Supabase, если настроен — иначе в памяти процесса как fallback): смысл
-// идеи не меняется, а повторный вызов модели на каждый опрос страницы был
-// бы бессмысленной тратой токенов.
+const PAGE_SIZE = 5;
+
+// In-memory fallback (см. yahooNews.ts) — только если Supabase не настроен.
 const memoryIdeaCache = new Map<string, Idea>();
-const MAX_ITEMS = 5;
+const memoryIdeaOrder: string[] = [];
 
 async function buildIdea(news: NewsItem): Promise<Idea | null> {
   const supabase = getSupabaseAdmin();
@@ -53,11 +52,35 @@ async function buildIdea(news: NewsItem): Promise<Idea | null> {
     await supabase.from("broker_app_idea_cache").upsert({ uuid: news.uuid, idea });
   } else {
     memoryIdeaCache.set(news.uuid, idea);
+    memoryIdeaOrder.unshift(news.uuid);
   }
   return idea;
 }
 
-export async function GET() {
+async function listIdeasPage(page: number): Promise<{ ideas: Idea[]; nextPage: number | null }> {
+  const supabase = getSupabaseAdmin();
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  if (supabase) {
+    const { data, count } = await supabase
+      .from("broker_app_idea_cache")
+      .select("idea", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .order("uuid", { ascending: false })
+      .range(from, to);
+    const ideas = (data ?? []).map((r: any) => r.idea as Idea);
+    const hasMore = count != null ? to + 1 < count : ideas.length === PAGE_SIZE;
+    return { ideas, nextPage: hasMore ? page + 1 : null };
+  }
+
+  const uuids = memoryIdeaOrder.slice(from, to + 1);
+  const ideas = uuids.map((u) => memoryIdeaCache.get(u)!).filter(Boolean);
+  const hasMore = from + PAGE_SIZE < memoryIdeaOrder.length;
+  return { ideas, nextPage: hasMore ? page + 1 : null };
+}
+
+export async function GET(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: "ANTHROPIC_API_KEY не настроен на сервере" },
@@ -65,13 +88,18 @@ export async function GET() {
     );
   }
 
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(0, Number(searchParams.get("page") ?? 0) || 0);
+
   try {
-    const news = await fetchMarketNews(MAX_ITEMS);
-    const ideas = (await Promise.all(news.map(buildIdea))).filter(
-      (i): i is Idea => i != null
-    );
-    ideas.sort((a, b) => b.publishedAt - a.publishedAt);
-    return NextResponse.json({ ideas });
+    if (page === 0) {
+      // Перефразируем только действительно новые статьи дня — остальные
+      // уже лежат готовыми в архиве и не требуют нового вызова Claude.
+      const freshToday = await ensureTodayNewsFetched();
+      await Promise.all(freshToday.map(buildIdea));
+    }
+    const { ideas, nextPage } = await listIdeasPage(page);
+    return NextResponse.json({ ideas, nextPage });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },

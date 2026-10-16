@@ -11,10 +11,12 @@ export type NewsItem = {
 
 // In-memory fallback — используется только если SUPABASE_URL/KEY не
 // настроены (например, локально без .env.local). На проде с настроенным
-// Supabase это не задействуется: кэш там переживает холодные старты и
-// редеплои, в отличие от памяти serverless-инстанса.
-type CacheEntry = { data: NewsItem[]; day: string };
-const memoryCache = new Map<string, CacheEntry>();
+// Supabase это не задействуется.
+const memoryArchive: NewsItem[] = [];
+let memoryLastFetchedDay: string | null = null;
+
+const DAILY_LIMIT = 5;
+const PAGE_SIZE = 5;
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -55,27 +57,7 @@ async function searchYahooNews(query: string, count: number): Promise<NewsItem[]
 // нескольких тематических срезов рынка США.
 const FEED_QUERIES = ["stock market", "earnings", "Nasdaq"];
 
-// Список "топ-N новостей дня" фиксируется на календарные сутки (UTC) —
-// не TTL в минутах. Так и новости, и завязанные на них AI-идеи остаются
-// стабильными весь день и не плодят лишние вызовы Yahoo/Claude при каждом
-// заходе пользователя.
-export async function fetchMarketNews(limit = 5): Promise<NewsItem[]> {
-  const key = `market:${limit}`;
-  const today = todayKey();
-  const supabase = getSupabaseAdmin();
-
-  if (supabase) {
-    const { data: row } = await supabase
-      .from("broker_app_news_cache")
-      .select("day, items")
-      .eq("cache_key", key)
-      .maybeSingle();
-    if (row && row.day === today) return row.items as NewsItem[];
-  } else {
-    const cached = memoryCache.get(key);
-    if (cached && cached.day === today) return cached.data;
-  }
-
+async function fetchFreshFromYahoo(excludeUuids: Set<string>): Promise<NewsItem[]> {
   const batches = await Promise.all(
     FEED_QUERIES.map((q) => searchYahooNews(q, 10).catch(() => [] as NewsItem[]))
   );
@@ -84,20 +66,95 @@ export async function fetchMarketNews(limit = 5): Promise<NewsItem[]> {
   const merged: NewsItem[] = [];
   for (const batch of batches) {
     for (const item of batch) {
-      if (seen.has(item.uuid)) continue;
+      if (seen.has(item.uuid) || excludeUuids.has(item.uuid)) continue;
       seen.add(item.uuid);
       merged.push(item);
     }
   }
   merged.sort((a, b) => b.publishedAt - a.publishedAt);
-  const result = merged.slice(0, limit);
+  return merged.slice(0, DAILY_LIMIT);
+}
+
+// Докидывает в накапливающийся архив до DAILY_LIMIT новых новостей за
+// текущие календарные сутки (UTC) — ровно один раз в день, при первом
+// заходе. Уже добавленные статьи никогда не трогаются и не удаляются —
+// старые страницы архива остаются стабильными.
+export async function ensureTodayNewsFetched(): Promise<NewsItem[]> {
+  const today = todayKey();
+  const supabase = getSupabaseAdmin();
 
   if (supabase) {
-    await supabase
-      .from("broker_app_news_cache")
-      .upsert({ cache_key: key, day: today, items: result, updated_at: new Date().toISOString() });
-  } else {
-    memoryCache.set(key, { data: result, day: today });
+    const { data: existingToday } = await supabase
+      .from("broker_app_news_items")
+      .select("uuid, title, publisher, link, published_at, thumbnail")
+      .eq("day", today);
+    if (existingToday && existingToday.length > 0) {
+      return existingToday.map(rowToNewsItem);
+    }
+
+    const { data: allUuidRows } = await supabase
+      .from("broker_app_news_items")
+      .select("uuid");
+    const excludeUuids = new Set((allUuidRows ?? []).map((r: any) => r.uuid as string));
+
+    const fresh = await fetchFreshFromYahoo(excludeUuids);
+    if (fresh.length === 0) return [];
+
+    await supabase.from("broker_app_news_items").upsert(
+      fresh.map((n) => ({
+        uuid: n.uuid,
+        title: n.title,
+        publisher: n.publisher,
+        link: n.link,
+        published_at: n.publishedAt,
+        thumbnail: n.thumbnail,
+        day: today,
+      }))
+    );
+    return fresh;
   }
-  return result;
+
+  if (memoryLastFetchedDay === today) return [];
+  const excludeUuids = new Set(memoryArchive.map((n) => n.uuid));
+  const fresh = await fetchFreshFromYahoo(excludeUuids);
+  memoryArchive.unshift(...fresh);
+  memoryLastFetchedDay = today;
+  return fresh;
+}
+
+function rowToNewsItem(row: any): NewsItem {
+  return {
+    uuid: row.uuid,
+    title: row.title,
+    publisher: row.publisher,
+    link: row.link,
+    publishedAt: row.published_at,
+    thumbnail: row.thumbnail,
+  };
+}
+
+export type NewsPage = { items: NewsItem[]; nextPage: number | null };
+
+// Постраничная выдача накопленного архива, от новых к старым.
+export async function listNewsPage(page: number, pageSize = PAGE_SIZE): Promise<NewsPage> {
+  const supabase = getSupabaseAdmin();
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  if (supabase) {
+    const { data, count } = await supabase
+      .from("broker_app_news_items")
+      .select("uuid, title, publisher, link, published_at, thumbnail", { count: "exact" })
+      .order("published_at", { ascending: false })
+      .order("uuid", { ascending: false })
+      .range(from, to);
+    const items = (data ?? []).map(rowToNewsItem);
+    const hasMore = count != null ? to + 1 < count : items.length === pageSize;
+    return { items, nextPage: hasMore ? page + 1 : null };
+  }
+
+  const sorted = [...memoryArchive].sort((a, b) => b.publishedAt - a.publishedAt);
+  const items = sorted.slice(from, to + 1);
+  const hasMore = from + pageSize < sorted.length;
+  return { items, nextPage: hasMore ? page + 1 : null };
 }

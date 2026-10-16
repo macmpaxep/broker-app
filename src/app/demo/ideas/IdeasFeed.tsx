@@ -17,23 +17,31 @@ export default function IdeasFeed() {
   const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Idea | null>(null);
+  const [nextPage, setNextPage] = useState<number | null>(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  async function loadPage(page: number) {
+    if (page === 0) setIdeas(null);
+    else setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/ideas?page=${page}`);
+      const json = await res.json();
+      if (json.error) {
+        setError(json.error);
+        return;
+      }
+      setIdeas((prev) => (page === 0 ? json.ideas ?? [] : [...(prev ?? []), ...(json.ideas ?? [])]));
+      setNextPage(json.nextPage ?? null);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/ideas")
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.error) {
-          setError(json.error);
-          return;
-        }
-        setIdeas(json.ideas ?? []);
-      })
-      .catch((err) => !cancelled && setError(String(err)));
-    return () => {
-      cancelled = true;
-    };
+    loadPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (error) {
@@ -117,6 +125,21 @@ export default function IdeasFeed() {
             </div>
           </button>
         ))}
+
+        {nextPage != null && (
+          <button
+            onClick={() => loadPage(nextPage)}
+            disabled={loadingMore}
+            className="rounded-full py-2.5 text-sm font-semibold transition active:opacity-80"
+            style={{
+              background: "var(--vx-surface)",
+              border: "1px solid var(--vx-border)",
+              color: "var(--vx-text-faint)",
+            }}
+          >
+            {loadingMore ? "Загрузка..." : "Показать ещё"}
+          </button>
+        )}
       </div>
 
       {selected && (

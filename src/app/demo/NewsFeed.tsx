@@ -17,23 +17,31 @@ export default function NewsFeed() {
   const [news, setNews] = useState<NewsItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<NewsItem | null>(null);
+  const [nextPage, setNextPage] = useState<number | null>(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  async function loadPage(page: number) {
+    if (page === 0) setNews(null);
+    else setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/news?page=${page}`);
+      const json = await res.json();
+      if (json.error || !json.news) {
+        setError(json.error ?? "Нет новостей");
+        return;
+      }
+      setNews((prev) => (page === 0 ? json.news : [...(prev ?? []), ...json.news]));
+      setNextPage(json.nextPage ?? null);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/news")
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.error || !json.news?.length) {
-          setError(json.error ?? "Нет новостей");
-          return;
-        }
-        setNews(json.news);
-      })
-      .catch((err) => !cancelled && setError(String(err)));
-    return () => {
-      cancelled = true;
-    };
+    loadPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (error && !news) return null;
@@ -91,6 +99,20 @@ export default function NewsFeed() {
             </div>
           </button>
         ))}
+        {news && nextPage != null && (
+          <button
+            onClick={() => loadPage(nextPage)}
+            disabled={loadingMore}
+            className="shrink-0 w-24 rounded-2xl flex items-center justify-center text-xs font-medium snap-start"
+            style={{
+              background: "var(--vx-surface)",
+              border: "1px solid var(--vx-border)",
+              color: "var(--vx-text-faint)",
+            }}
+          >
+            {loadingMore ? "..." : "Ещё →"}
+          </button>
+        )}
       </div>
 
       {selected && (
