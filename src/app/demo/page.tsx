@@ -1,4 +1,5 @@
 import Quotes from "./Quotes";
+import NewsFeed from "./NewsFeed";
 
 export default function DemoPage() {
   return (
@@ -21,6 +22,7 @@ export default function DemoPage() {
         </div>
       </header>
 
+      <NewsFeed />
       <Quotes />
     </main>
   );
