@@ -7,9 +7,12 @@ export type NewsItem = {
   thumbnail: string | null;
 };
 
-type CacheEntry = { data: NewsItem[]; ts: number };
+type CacheEntry = { data: NewsItem[]; day: string };
 const cache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 10 * 60_000;
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 type YahooSearchNewsRaw = {
   uuid: string;
@@ -46,10 +49,15 @@ async function searchYahooNews(query: string, count: number): Promise<NewsItem[]
 // нескольких тематических срезов рынка США.
 const FEED_QUERIES = ["stock market", "earnings", "Nasdaq"];
 
-export async function fetchMarketNews(limit = 15): Promise<NewsItem[]> {
+// Список "топ-N новостей дня" фиксируется на календарные сутки (UTC) —
+// не TTL в минутах. Так и новости, и завязанные на них AI-идеи остаются
+// стабильными весь день и не плодят лишние вызовы Yahoo/Claude при каждом
+// заходе пользователя.
+export async function fetchMarketNews(limit = 5): Promise<NewsItem[]> {
   const key = `market:${limit}`;
+  const today = todayKey();
   const cached = cache.get(key);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.data;
+  if (cached && cached.day === today) return cached.data;
 
   const batches = await Promise.all(
     FEED_QUERIES.map((q) => searchYahooNews(q, 10).catch(() => [] as NewsItem[]))
@@ -67,6 +75,6 @@ export async function fetchMarketNews(limit = 15): Promise<NewsItem[]> {
   merged.sort((a, b) => b.publishedAt - a.publishedAt);
   const result = merged.slice(0, limit);
 
-  cache.set(key, { data: result, ts: Date.now() });
+  cache.set(key, { data: result, day: today });
   return result;
 }

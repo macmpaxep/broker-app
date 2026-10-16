@@ -16,6 +16,7 @@ function timeAgo(unixSeconds: number) {
 export default function NewsFeed() {
   const [news, setNews] = useState<NewsItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<NewsItem | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,12 +56,10 @@ export default function NewsFeed() {
             />
           ))}
         {news?.map((item) => (
-          <a
+          <button
             key={item.uuid}
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 w-64 rounded-2xl overflow-hidden flex flex-col snap-start transition active:opacity-80"
+            onClick={() => setSelected(item)}
+            className="shrink-0 w-64 rounded-2xl overflow-hidden flex flex-col text-left snap-start transition active:opacity-80"
             style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
           >
             {item.thumbnail ? (
@@ -90,9 +89,78 @@ export default function NewsFeed() {
                 <span className="shrink-0 ml-2">{timeAgo(item.publishedAt)}</span>
               </div>
             </div>
-          </a>
+          </button>
         ))}
       </div>
+
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-5 flex flex-col gap-4 max-h-[85vh] overflow-y-auto"
+            style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span
+                className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                style={{ background: "var(--vx-surface-2)", color: "var(--vx-text-faint)" }}
+              >
+                Новость
+              </span>
+              <button
+                onClick={() => setSelected(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: "var(--vx-surface-2)" }}
+                aria-label="Закрыть"
+              >
+                ✕
+              </button>
+            </div>
+
+            {selected.thumbnail && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={selected.thumbnail}
+                alt=""
+                className="w-full h-40 rounded-2xl object-cover"
+              />
+            )}
+
+            <h2 className="text-xl font-semibold leading-snug">
+              {selected.title}
+            </h2>
+
+            <div
+              className="text-xs flex items-center gap-1.5"
+              style={{ color: "var(--vx-text-faint)" }}
+            >
+              <span className="truncate">{selected.publisher}</span>
+              <span>·</span>
+              <span className="shrink-0">{timeAgo(selected.publishedAt)}</span>
+            </div>
+
+            <p className="text-sm leading-relaxed" style={{ color: "var(--vx-text-dim)" }}>
+              Полный текст статьи доступен на сайте издателя — публичная лента
+              Yahoo Finance отдаёт только заголовок и превью, без текста
+              статьи.
+            </p>
+
+            <a
+              href={selected.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full px-4 py-2.5 text-sm font-semibold text-center transition active:opacity-80"
+              style={{ background: "var(--vx-surface-2)", color: "var(--vx-text)", border: "1px solid var(--vx-border)" }}
+            >
+              Читать на {selected.publisher} ↗
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

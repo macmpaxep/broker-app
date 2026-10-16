@@ -1,10 +1,10 @@
-export type RephrasedIdea = { headline: string; summary: string };
+export type RephrasedIdea = { headline: string; summary: string; analysis: string };
 
-// Перефразирует заголовок новости через Claude Haiku в более "инвесторский"
-// формат — короткий заголовок-идея + 2 предложения пояснения. Источник —
-// только заголовок + издатель (публичный поиск Yahoo не отдаёт тело
-// статьи), поэтому модель разворачивает и переосмысляет заголовок, а не
-// пересказывает статью целиком.
+// Перефразирует заголовок новости через Claude Haiku в формат инвестиционной
+// идеи с карточкой (короткий заголовок + тизер) и развёрнутым разбором для
+// экрана деталей внутри приложения. Источник — только заголовок + издатель
+// (публичный поиск Yahoo не отдаёт тело статьи), поэтому модель разворачивает
+// и переосмысляет заголовок, а не пересказывает статью целиком.
 export async function rephraseHeadline(
   title: string,
   publisher: string
@@ -17,7 +17,11 @@ export async function rephraseHeadline(
 "${title}"
 
 Перефразируй его в формате инвестиционной идеи для частного инвестора на русском языке. Верни ТОЛЬКО JSON без markdown-разметки и пояснений, в формате:
-{"headline": "короткий цепляющий заголовок до 70 символов", "summary": "2 предложения: что произошло и почему это может быть важно для инвестора"}`;
+{
+  "headline": "короткий цепляющий заголовок до 70 символов",
+  "summary": "1-2 предложения тизера для карточки в списке",
+  "analysis": "развёрнутый разбор на 4-6 предложений для экрана деталей: что произошло, какие тикеры/сектор затронуты, почему это может быть важно для инвестора, на что обратить внимание дальше. Пиши по делу, без воды, не выдумывай цифры и факты, которых нет в заголовке — если деталей не хватает, явно опирайся на общий контекст рынка, а не придумывай конкретику."
+}`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -29,7 +33,7 @@ export async function rephraseHeadline(
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 300,
+        max_tokens: 600,
         messages: [{ role: "user", content: prompt }],
       }),
       cache: "no-store",
@@ -40,10 +44,14 @@ export async function rephraseHeadline(
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return null;
     const parsed = JSON.parse(match[0]);
-    if (typeof parsed.headline !== "string" || typeof parsed.summary !== "string") {
+    if (
+      typeof parsed.headline !== "string" ||
+      typeof parsed.summary !== "string" ||
+      typeof parsed.analysis !== "string"
+    ) {
       return null;
     }
-    return { headline: parsed.headline, summary: parsed.summary };
+    return { headline: parsed.headline, summary: parsed.summary, analysis: parsed.analysis };
   } catch {
     return null;
   }

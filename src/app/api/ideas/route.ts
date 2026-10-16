@@ -6,6 +6,7 @@ export type Idea = {
   uuid: string;
   headline: string;
   summary: string;
+  analysis: string;
   publisher: string;
   link: string;
   publishedAt: number;
@@ -18,7 +19,7 @@ export type Idea = {
 // мере появления новых статей в ленте Yahoo (имитация регулярной публикации).
 const ideaCache = new Map<string, { idea: Idea; ts: number }>();
 const IDEA_TTL_MS = 24 * 60 * 60_000;
-const MAX_ITEMS = 8;
+const MAX_ITEMS = 5;
 
 async function buildIdea(news: NewsItem): Promise<Idea | null> {
   const cached = ideaCache.get(news.uuid);
@@ -31,6 +32,7 @@ async function buildIdea(news: NewsItem): Promise<Idea | null> {
     uuid: news.uuid,
     headline: rephrased.headline,
     summary: rephrased.summary,
+    analysis: rephrased.analysis,
     publisher: news.publisher,
     link: news.link,
     publishedAt: news.publishedAt,
