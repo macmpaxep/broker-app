@@ -23,15 +23,6 @@ function fmtUsd(n: number) {
   });
 }
 
-function fmtUsdCompact(n: number) {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
-}
-
 function fmtPct(n: number) {
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
@@ -113,7 +104,7 @@ export default function LivePortfolio() {
               Стоимость портфеля
             </div>
             <div className="vx-num text-3xl font-semibold mt-1">
-              {fmtUsd(totalValue)}
+              {fmtUsd(totalValue + cash)}
             </div>
           </div>
           <div className="text-right">
@@ -128,7 +119,7 @@ export default function LivePortfolio() {
               style={{ color: pnlColor }}
             >
               {isUp ? "+" : ""}
-              {fmtUsdCompact(totalPnl)}
+              {fmtUsd(totalPnl)}
             </div>
             <div
               className="vx-num text-xs font-medium"
@@ -171,7 +162,7 @@ export default function LivePortfolio() {
           <TimeSeriesChart
             data={history}
             timeframe={timeframe}
-            color={pnlColor}
+            color="var(--vx-chart)"
             label="Стоимость"
           />
         ) : (

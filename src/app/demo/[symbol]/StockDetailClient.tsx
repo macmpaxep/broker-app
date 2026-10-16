@@ -127,7 +127,7 @@ export default function StockDetailClient({ symbol }: { symbol: string }) {
           style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
         >
           {history ? (
-            <TimeSeriesChart data={history} timeframe={timeframe} color={accent} />
+            <TimeSeriesChart data={history} timeframe={timeframe} color="var(--vx-chart)" />
           ) : (
             <div
               className="h-[224px] w-full rounded-2xl animate-pulse"

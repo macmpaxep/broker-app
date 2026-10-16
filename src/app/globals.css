@@ -18,6 +18,7 @@
   --vx-violet: #8c6bff;
   --vx-positive: #a3ff3c;
   --vx-negative: #ff5470;
+  --vx-chart: #8094b3;
 }
 
 @theme inline {
@@ -38,6 +39,7 @@
   --color-vx-violet: var(--vx-violet);
   --color-vx-positive: var(--vx-positive);
   --color-vx-negative: var(--vx-negative);
+  --color-vx-chart: var(--vx-chart);
 }
 
 @media (prefers-color-scheme: dark) {
