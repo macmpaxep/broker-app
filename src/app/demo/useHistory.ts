@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import type { HistoryPoint, Timeframe } from "@/lib/portfolio";
 
+// Произвольный диапазон дат (YYYY-MM-DD), выбранный пользователем в панели
+// периода, вместо одного из быстрых пресетов.
+export type CustomRange = { from: string; to: string };
+
 function rangeForTimeframe(timeframe: Timeframe, allStartDate: string) {
   const now = Math.floor(Date.now() / 1000);
   const DAY = 86_400;
@@ -26,16 +30,39 @@ function rangeForTimeframe(timeframe: Timeframe, allStartDate: string) {
   }
 }
 
+function rangeForCustom(range: CustomRange) {
+  const period1 = Math.floor(new Date(range.from).getTime() / 1000);
+  // Включаем весь конечный день — ставим period2 на его последнюю секунду.
+  const period2 = Math.floor(new Date(range.to).getTime() / 1000) + 86_399;
+  const days = (period2 - period1) / 86_400;
+  const interval = days <= 2 ? "30m" : days <= 10 ? "60m" : "1d";
+  return { period1, period2, interval };
+}
+
+function resolveRange(
+  timeframe: Timeframe,
+  allStartDate: string,
+  customRange?: CustomRange | null
+) {
+  if (customRange) return rangeForCustom(customRange);
+  return rangeForTimeframe(timeframe, allStartDate);
+}
+
 type State = { data: HistoryPoint[] | null; error: string | null };
 
-export function useStockHistory(symbol: string, timeframe: Timeframe, buyDate: string) {
+export function useStockHistory(
+  symbol: string,
+  timeframe: Timeframe,
+  buyDate: string,
+  customRange?: CustomRange | null
+) {
   const [state, setState] = useState<State>({ data: null, error: null });
 
   useEffect(() => {
     let cancelled = false;
     setState({ data: null, error: null });
 
-    const { period1, period2, interval } = rangeForTimeframe(timeframe, buyDate);
+    const { period1, period2, interval } = resolveRange(timeframe, buyDate, customRange);
     const url = `/api/history?symbol=${encodeURIComponent(symbol)}&period1=${period1}&period2=${period2}&interval=${interval}`;
 
     fetch(url)
@@ -55,19 +82,27 @@ export function useStockHistory(symbol: string, timeframe: Timeframe, buyDate: s
     return () => {
       cancelled = true;
     };
-  }, [symbol, timeframe, buyDate]);
+  }, [symbol, timeframe, buyDate, customRange?.from, customRange?.to]);
 
   return state;
 }
 
-export function usePortfolioHistory(timeframe: Timeframe, earliestBuyDate: string) {
+export function usePortfolioHistory(
+  timeframe: Timeframe,
+  earliestBuyDate: string,
+  customRange?: CustomRange | null
+) {
   const [state, setState] = useState<State>({ data: null, error: null });
 
   useEffect(() => {
     let cancelled = false;
     setState({ data: null, error: null });
 
-    const { period1, period2, interval } = rangeForTimeframe(timeframe, earliestBuyDate);
+    const { period1, period2, interval } = resolveRange(
+      timeframe,
+      earliestBuyDate,
+      customRange
+    );
     const url = `/api/portfolio-history?period1=${period1}&period2=${period2}&interval=${interval}`;
 
     fetch(url)
@@ -87,7 +122,7 @@ export function usePortfolioHistory(timeframe: Timeframe, earliestBuyDate: strin
     return () => {
       cancelled = true;
     };
-  }, [timeframe, earliestBuyDate]);
+  }, [timeframe, earliestBuyDate, customRange?.from, customRange?.to]);
 
   return state;
 }

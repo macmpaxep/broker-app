@@ -10,9 +10,10 @@ import {
 } from "@/lib/portfolio";
 import { WATCHLIST } from "@/lib/watchlist";
 import { useDemoPortfolio } from "./useDemoPortfolio";
-import { usePortfolioHistory } from "./useHistory";
+import { usePortfolioHistory, type CustomRange } from "./useHistory";
 import Logo from "./Logo";
 import TimeSeriesChart from "./TimeSeriesChart";
+import PeriodPicker from "./PeriodPicker";
 
 function fmtUsd(n: number) {
   return n.toLocaleString("en-US", {
@@ -47,16 +48,22 @@ export default function LivePortfolio() {
   const [tradeSymbol, setTradeSymbol] = useState(WATCHLIST[0].symbol);
   const [tradeQty, setTradeQty] = useState("1");
   const [timeframe, setTimeframe] = useState<Timeframe>("1M");
+  const [customRange, setCustomRange] = useState<CustomRange | null>(null);
 
   const { data: realHistory, error: historyError } = usePortfolioHistory(
     timeframe,
-    BUY_DATE
+    BUY_DATE,
+    customRange
   );
   // Запасной вариант — смоделированная траектория, только если реальные
-  // данные недоступны (например, Yahoo Finance недоступен/лимит).
-  const fallbackHistory = historyError
-    ? portfolioHistoryTF(timeframe, totalValue, totalCost, new Date())
-    : null;
+  // данные недоступны (например, Yahoo Finance недоступен/лимит) и выбран
+  // один из пресетов, а не свой диапазон дат (для него синтетика не
+  // поддерживается — проще показать предупреждение, чем приблизительно
+  // угадывать точки на произвольном отрезке).
+  const fallbackHistory =
+    historyError && !customRange
+      ? portfolioHistoryTF(timeframe, totalValue, totalCost, new Date())
+      : null;
   const history = realHistory ?? fallbackHistory;
 
   // P&L в сводке пересчитывается под выбранный период графика: для "Всё"
@@ -77,7 +84,9 @@ export default function LivePortfolio() {
 
   const displayedPnl = periodChange ?? totalPnl;
   const displayedPnlPct = periodChangePct ?? totalPnlPct;
-  const periodLabel = TIMEFRAMES.find((tf) => tf.key === timeframe)?.label ?? "";
+  const periodLabel = customRange
+    ? "период"
+    : (TIMEFRAMES.find((tf) => tf.key === timeframe)?.label ?? "");
   const isUp = displayedPnl >= 0;
   const pnlColor = isUp ? "var(--vx-positive)" : "var(--vx-negative)";
 
@@ -181,7 +190,7 @@ export default function LivePortfolio() {
         {history ? (
           <TimeSeriesChart
             data={history}
-            timeframe={timeframe}
+            timeframe={customRange ? "ALL" : timeframe}
             color="var(--vx-chart)"
             label="Стоимость"
           />
@@ -191,26 +200,23 @@ export default function LivePortfolio() {
             style={{ background: "var(--vx-surface-2)" }}
           />
         )}
-        <div className="flex gap-1 mt-2">
-          {TIMEFRAMES.map((tf) => (
-            <button
-              key={tf.key}
-              onClick={() => setTimeframe(tf.key)}
-              className="flex-1 rounded-full py-1.5 text-xs font-semibold transition"
-              style={
-                timeframe === tf.key
-                  ? { background: "var(--vx-brand)", color: "var(--vx-brand-ink)" }
-                  : { color: "var(--vx-text-faint)" }
-              }
-            >
-              {tf.label}
-            </button>
-          ))}
+        <div className="mt-3">
+          <PeriodPicker
+            timeframe={timeframe}
+            customRange={customRange}
+            onTimeframeChange={setTimeframe}
+            onCustomRangeChange={setCustomRange}
+          />
         </div>
-        {historyError && (
+        {historyError && !customRange && (
           <p className="text-xs mt-3 font-medium" style={{ color: "#ffb84d" }}>
             ⚠ Не удалось загрузить реальную историю цен — показан
             приблизительный смоделированный график.
+          </p>
+        )}
+        {historyError && customRange && (
+          <p className="text-xs mt-3 font-medium" style={{ color: "#ffb84d" }}>
+            ⚠ Не удалось загрузить данные за выбранный период.
           </p>
         )}
       </div>
