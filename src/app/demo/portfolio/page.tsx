@@ -1,3 +1,4 @@
+import Link from "next/link";
 import LivePortfolio from "../LivePortfolio";
 
 export default function PortfolioPage() {
@@ -15,11 +16,24 @@ export default function PortfolioPage() {
             Демо-портфель
           </h1>
         </div>
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm shrink-0"
-          style={{ background: "var(--vx-brand)", color: "var(--vx-brand-ink)" }}
-        >
-          ДА
+        <div className="flex items-center gap-3">
+          <Link
+            href="/demo/portfolio/trades"
+            className="rounded-full px-4 py-2 text-sm font-semibold transition active:opacity-80"
+            style={{
+              background: "var(--vx-surface)",
+              border: "1px solid var(--vx-border)",
+              color: "var(--vx-text)",
+            }}
+          >
+            Сделки
+          </Link>
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm shrink-0"
+            style={{ background: "var(--vx-brand)", color: "var(--vx-brand-ink)" }}
+          >
+            ДА
+          </div>
         </div>
       </header>
 
