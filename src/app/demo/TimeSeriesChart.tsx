@@ -45,6 +45,23 @@ function fmtTooltipDate(d: string, timeframe: Timeframe) {
   });
 }
 
+// Короткие подписи для оси X — формат меняется в зависимости от периода,
+// как в TradingView: внутри дня показываем время, на недельных/месячных
+// окнах — число и месяц, на годовом горизонте — месяц и год.
+function fmtAxisDate(d: string, timeframe: Timeframe) {
+  const date = new Date(d);
+  if (timeframe === "1D") {
+    return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  }
+  if (timeframe === "1W") {
+    return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
+  }
+  if (timeframe === "ALL") {
+    return date.toLocaleDateString("ru-RU", { month: "short", year: "2-digit" });
+  }
+  return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
+}
+
 export default function TimeSeriesChart({
   data,
   timeframe,
@@ -60,10 +77,16 @@ export default function TimeSeriesChart({
 }) {
   const gradientId = useId();
 
+  // Показываем ~5-6 подписей независимо от числа точек в датасете —
+  // Recharts interval задаёт, сколько тиков пропускать между видимыми.
+  const desiredTicks = 6;
+  const tickInterval =
+    data.length > desiredTicks ? Math.ceil(data.length / desiredTicks) - 1 : 0;
+
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 4, left: 0 }}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.32} />
@@ -75,7 +98,20 @@ export default function TimeSeriesChart({
             vertical={false}
             strokeDasharray="3 5"
           />
-          <XAxis dataKey="date" hide />
+          <XAxis
+            dataKey="date"
+            tickFormatter={(d) => fmtAxisDate(String(d), timeframe)}
+            interval={tickInterval}
+            tick={{
+              fill: "var(--vx-text-faint)",
+              fontSize: 11,
+              fontFamily: "var(--font-display)",
+            }}
+            axisLine={{ stroke: "var(--vx-border)" }}
+            tickLine={false}
+            tickMargin={8}
+            minTickGap={24}
+          />
           <YAxis
             domain={["dataMin", "dataMax"]}
             tickFormatter={fmtUsdCompact}
