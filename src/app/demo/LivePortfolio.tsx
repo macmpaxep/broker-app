@@ -43,8 +43,6 @@ export default function LivePortfolio() {
   } = useDemoPortfolio();
 
   const { rows, totalCost, totalValue, totalPnl, totalPnlPct } = summary;
-  const isUp = totalPnl >= 0;
-  const pnlColor = isUp ? "var(--vx-positive)" : "var(--vx-negative)";
 
   const [tradeSymbol, setTradeSymbol] = useState(WATCHLIST[0].symbol);
   const [tradeQty, setTradeQty] = useState("1");
@@ -60,6 +58,28 @@ export default function LivePortfolio() {
     ? portfolioHistoryTF(timeframe, totalValue, totalCost, new Date())
     : null;
   const history = realHistory ?? fallbackHistory;
+
+  // P&L в сводке пересчитывается под выбранный период графика: для "Всё"
+  // это как раз общий P&L с момента покупки (совпадает с totalPnl), для
+  // более коротких окон — изменение стоимости позиций именно за этот
+  // период. Свободные средства в этот расчёт не входят — они сами по себе
+  // не растут и не падают в цене.
+  const periodStartValue = history?.[0]?.value ?? null;
+  const periodEndValue = history?.[history.length - 1]?.value ?? null;
+  const periodChange =
+    periodStartValue != null && periodEndValue != null
+      ? periodEndValue - periodStartValue
+      : null;
+  const periodChangePct =
+    periodChange != null && periodStartValue
+      ? (periodChange / periodStartValue) * 100
+      : null;
+
+  const displayedPnl = periodChange ?? totalPnl;
+  const displayedPnlPct = periodChangePct ?? totalPnlPct;
+  const periodLabel = TIMEFRAMES.find((tf) => tf.key === timeframe)?.label ?? "";
+  const isUp = displayedPnl >= 0;
+  const pnlColor = isUp ? "var(--vx-positive)" : "var(--vx-negative)";
 
   return (
     <div className="flex flex-col gap-5">
@@ -112,20 +132,20 @@ export default function LivePortfolio() {
               className="text-xs font-medium"
               style={{ color: "var(--vx-text-faint)" }}
             >
-              P&amp;L
+              P&amp;L{periodChange != null && periodLabel !== "Всё" ? ` · ${periodLabel}` : ""}
             </div>
             <div
               className="vx-num text-lg font-semibold mt-1 whitespace-nowrap"
               style={{ color: pnlColor }}
             >
               {isUp ? "+" : ""}
-              {fmtUsd(totalPnl)}
+              {fmtUsd(displayedPnl)}
             </div>
             <div
               className="vx-num text-xs font-medium"
               style={{ color: pnlColor }}
             >
-              {fmtPct(totalPnlPct)}
+              {fmtPct(displayedPnlPct)}
             </div>
           </div>
         </div>
