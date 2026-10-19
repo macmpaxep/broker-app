@@ -182,7 +182,7 @@ export default function LivePortfolio() {
         </div>
       </div>
 
-      {/* График роста портфеля с выбором периода */}
+      {/* График роста портфеля */}
       <div
         className="rounded-3xl p-4"
         style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
@@ -200,14 +200,6 @@ export default function LivePortfolio() {
             style={{ background: "var(--vx-surface-2)" }}
           />
         )}
-        <div className="mt-3">
-          <PeriodPicker
-            timeframe={timeframe}
-            customRange={customRange}
-            onTimeframeChange={setTimeframe}
-            onCustomRangeChange={setCustomRange}
-          />
-        </div>
         {historyError && !customRange && (
           <p className="text-xs mt-3 font-medium" style={{ color: "#ffb84d" }}>
             ⚠ Не удалось загрузить реальную историю цен — показан
@@ -219,6 +211,19 @@ export default function LivePortfolio() {
             ⚠ Не удалось загрузить данные за выбранный период.
           </p>
         )}
+      </div>
+
+      {/* Фильтр периода */}
+      <div
+        className="rounded-3xl p-4"
+        style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
+      >
+        <PeriodPicker
+          timeframe={timeframe}
+          customRange={customRange}
+          onTimeframeChange={setTimeframe}
+          onCustomRangeChange={setCustomRange}
+        />
       </div>
 
       {/* Компактный список позиций */}
