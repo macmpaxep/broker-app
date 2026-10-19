@@ -12,7 +12,7 @@ import { WATCHLIST } from "@/lib/watchlist";
 // опрос упёрся бы в лимит бесплатного тарифа Finnhub (см. /api/quotes).
 const POLL_INTERVAL_MS = 30_000;
 const PROFILE_POLL_INTERVAL_MS = 60 * 60 * 1000;
-const STORAGE_KEY = "vertex-demo-trading-v3";
+const STORAGE_KEY = "vertex-demo-trading-v4";
 export const STARTING_CASH = 5936.27;
 
 export type QuoteInfo = {

@@ -49,22 +49,6 @@ export const holdings: Holding[] = [
     currentPrice: 101.09,
     buyDate: "2024-08-15",
   },
-  {
-    symbol: "IONQ",
-    name: "IonQ, Inc.",
-    shares: 903,
-    buyPrice: 7.38,
-    currentPrice: 31.42,
-    buyDate: "2024-08-23",
-  },
-  {
-    symbol: "RGTI",
-    name: "Rigetti Computing, Inc.",
-    shares: 9664,
-    buyPrice: 0.69,
-    currentPrice: 11.67,
-    buyDate: "2024-09-09",
-  },
 ];
 
 export function withMetrics(h: Holding) {
