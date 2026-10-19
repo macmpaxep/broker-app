@@ -139,7 +139,7 @@ export default function TradesClient() {
                 style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
               >
                 <div className="flex items-center gap-3">
-                  <Logo symbol={t.symbol} />
+                  <Logo symbol={t.symbol} logo={profiles[t.symbol]?.logo} />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-[15px]">{t.symbol}</div>
                     <div className="text-xs truncate" style={{ color: "var(--vx-text-faint)" }}>
@@ -206,6 +206,32 @@ export default function TradesClient() {
                     {up ? "+" : ""}
                     {fmtUsd(t.profit)}{" "}
                     <span className="text-sm font-medium">({fmtPct(t.profitPct)})</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-xs font-medium" style={{ color: "var(--vx-text-faint)" }}>
+                    Комиссия
+                  </span>
+                  <span className="vx-num text-sm font-medium" style={{ color: "var(--vx-text-faint)" }}>
+                    −{fmtUsd(t.commission)}
+                  </span>
+                </div>
+
+                <div
+                  className="flex items-center justify-between mt-1.5 pt-1.5"
+                  style={{ borderTop: "1px solid var(--vx-border)" }}
+                >
+                  <span className="text-xs font-semibold" style={{ color: "var(--vx-text)" }}>
+                    Чистая прибыль
+                  </span>
+                  <span
+                    className="vx-num text-base font-semibold"
+                    style={{ color: t.netProfit >= 0 ? "var(--vx-positive)" : "var(--vx-negative)" }}
+                  >
+                    {t.netProfit >= 0 ? "+" : ""}
+                    {fmtUsd(t.netProfit)}{" "}
+                    <span className="text-sm font-medium">({fmtPct(t.netProfitPct)})</span>
                   </span>
                 </div>
               </div>

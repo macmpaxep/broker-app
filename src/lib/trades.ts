@@ -30,10 +30,37 @@ export const closedTrades: ClosedTrade[] = [
   },
 ];
 
+// Комиссия брокера: 0.5% от суммы сделки + $0.012 за акцию + $1.2 за приказ.
+// Считается отдельно для ордера на покупку и на продажу (это два разных
+// приказа), итоговая комиссия по закрытой позиции — их сумма.
+const COMMISSION_RATE = 0.005;
+const COMMISSION_PER_SHARE = 0.012;
+const COMMISSION_PER_ORDER = 1.2;
+
+function orderCommission(shares: number, price: number) {
+  return shares * price * COMMISSION_RATE + shares * COMMISSION_PER_SHARE + COMMISSION_PER_ORDER;
+}
+
 export function withClosedMetrics(t: ClosedTrade) {
   const costBasis = t.shares * t.buyPrice;
   const proceeds = t.shares * t.sellPrice;
   const profit = proceeds - costBasis;
   const profitPct = (profit / costBasis) * 100;
-  return { ...t, costBasis, proceeds, profit, profitPct };
+
+  const buyCommission = orderCommission(t.shares, t.buyPrice);
+  const sellCommission = orderCommission(t.shares, t.sellPrice);
+  const commission = buyCommission + sellCommission;
+  const netProfit = profit - commission;
+  const netProfitPct = (netProfit / costBasis) * 100;
+
+  return {
+    ...t,
+    costBasis,
+    proceeds,
+    profit,
+    profitPct,
+    commission,
+    netProfit,
+    netProfitPct,
+  };
 }
