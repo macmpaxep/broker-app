@@ -38,4 +38,6 @@ export const WATCHLIST: WatchlistEntry[] = [
   { symbol: "LCID", name: "Lucid Group, Inc.", currentPrice: 2.5 },
   { symbol: "CVS", name: "CVS Health Corporation", currentPrice: 65 },
   { symbol: "ULTA", name: "Ulta Beauty, Inc.", currentPrice: 400 },
+  { symbol: "UNH", name: "UnitedHealth Group Incorporated", currentPrice: 417 },
+  { symbol: "TGT", name: "Target Corporation", currentPrice: 90 },
 ];
