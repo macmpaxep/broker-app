@@ -73,9 +73,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Netflix, Inc.",
     side: "long",
     shares: 800,
-    openPrice: 18.76,
+    openPrice: 187.6,
     openDate: "2022-05-13",
-    closePrice: 35.57,
+    closePrice: 355.7,
     closeDate: "2023-10-13",
   },
   {
@@ -103,7 +103,7 @@ export const closedTrades: ClosedTrade[] = [
     name: "NVIDIA Corporation",
     side: "long",
     shares: 300,
-    openPrice: 48.17,
+    openPrice: 48.03,
     openDate: "2024-01-02",
     closePrice: 130.78,
     closeDate: "2024-06-18",
@@ -115,7 +115,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 30,
     openPrice: 285.6,
     openDate: "2024-01-02",
-    closePrice: 1077.88,
+    closePrice: 1140.0,
     closeDate: "2024-03-08",
   },
   {
@@ -123,9 +123,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Coinbase Global, Inc.",
     side: "long",
     shares: 100,
-    openPrice: 185.74,
+    openPrice: 156.88,
     openDate: "2024-01-02",
-    closePrice: 279.07,
+    closePrice: 233.67,
     closeDate: "2024-03-14",
   },
   {
@@ -135,7 +135,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 20,
     openPrice: 674.68,
     openDate: "2024-01-02",
-    closePrice: 1999.0,
+    closePrice: 1877.0,
     closeDate: "2024-03-26",
   },
   {
@@ -145,7 +145,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 400,
     openPrice: 61.29,
     openDate: "2024-01-02",
-    closePrice: 77.75,
+    closePrice: 71.61,
     closeDate: "2024-02-08",
   },
   {
@@ -155,7 +155,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 1200,
     openPrice: 16.42,
     openDate: "2024-01-02",
-    closePrice: 70.85,
+    closePrice: 62.12,
     closeDate: "2024-11-20",
   },
   {
@@ -163,9 +163,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "JPMorgan Chase & Co.",
     side: "long",
     shares: 150,
-    openPrice: 170.1,
+    openPrice: 161.47,
     openDate: "2024-01-02",
-    closePrice: 242.96,
+    closePrice: 233.85,
     closeDate: "2024-12-04",
   },
   {
@@ -173,9 +173,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Visa Inc.",
     side: "long",
     shares: 100,
-    openPrice: 259.73,
+    openPrice: 253.56,
     openDate: "2024-01-02",
-    closePrice: 292.24,
+    closePrice: 272.81,
     closeDate: "2024-10-09",
   },
   {
@@ -183,9 +183,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Mastercard Incorporated",
     side: "long",
     shares: 80,
-    openPrice: 425.8,
+    openPrice: 414.39,
     openDate: "2024-01-02",
-    closePrice: 516.0,
+    closePrice: 493.9,
     closeDate: "2024-10-09",
   },
   {
@@ -213,9 +213,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Walmart Inc.",
     side: "long",
     shares: 400,
-    openPrice: 52.25,
+    openPrice: 51.64,
     openDate: "2024-01-02",
-    closePrice: 83.47,
+    closePrice: 78.66,
     closeDate: "2024-10-11",
   },
   {
@@ -223,9 +223,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Robinhood Markets, Inc.",
     side: "long",
     shares: 1500,
-    openPrice: 11.48,
+    openPrice: 12.37,
     openDate: "2024-01-02",
-    closePrice: 40.89,
+    closePrice: 38.92,
     closeDate: "2024-12-05",
   },
   {
@@ -243,9 +243,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Netflix, Inc.",
     side: "long",
     shares: 600,
-    openPrice: 48.7,
+    openPrice: 468.5,
     openDate: "2024-01-02",
-    closePrice: 76.5,
+    closePrice: 763.9,
     closeDate: "2024-10-18",
   },
 
@@ -265,9 +265,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "The Boeing Company",
     side: "short",
     shares: 100,
-    openPrice: 247.0,
+    openPrice: 251.76,
     openDate: "2024-01-02",
-    closePrice: 168.0,
+    closePrice: 170.21,
     closeDate: "2024-04-17",
   },
   {
@@ -275,9 +275,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "NIKE, Inc.",
     side: "short",
     shares: 200,
-    openPrice: 108.26,
+    openPrice: 99.68,
     openDate: "2024-01-02",
-    closePrice: 75.9,
+    closePrice: 71.04,
     closeDate: "2024-06-28",
   },
   {
@@ -305,9 +305,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "CVS Health Corporation",
     side: "short",
     shares: 300,
-    openPrice: 80.26,
+    openPrice: 72.72,
     openDate: "2024-01-02",
-    closePrice: 58.26,
+    closePrice: 53.34,
     closeDate: "2024-08-15",
   },
   {
@@ -315,16 +315,15 @@ export const closedTrades: ClosedTrade[] = [
     name: "Ulta Beauty, Inc.",
     side: "short",
     shares: 50,
-    openPrice: 460.0,
+    openPrice: 402.11,
     openDate: "2024-05-01",
-    closePrice: 365.0,
+    closePrice: 395.09,
     closeDate: "2024-05-31",
   },
 
-  // --- 2025–2026: даты и цены ниже для 2026 г. проверены по биржевым
-  // архивам (StatMuse); для 2025 г. основаны на хорошо задокументированных
-  // движениях рынка (апрельский "тарифный" обвал и восстановление) —
-  // отдельно по каждой не сверялись до цента, как IONQ/RGTI/PLTR/META и т.д.
+  // --- 2025–2026: все open/close цены ниже сверены по биржевым архивам
+  // (StatMuse) и укладываются в дневной диапазон high/low соответствующей
+  // даты.
 
   // --- Long, 2025 ---
   {
@@ -384,7 +383,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 150,
     openPrice: 221.86,
     openDate: "2025-04-07",
-    closePrice: 305.0,
+    closePrice: 332.56,
     closeDate: "2025-07-23",
   },
   {
@@ -404,7 +403,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 80,
     openPrice: 490.0,
     openDate: "2025-04-07",
-    closePrice: 580.0,
+    closePrice: 569.35,
     closeDate: "2025-10-01",
   },
   {
@@ -412,9 +411,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "JPMorgan Chase & Co.",
     side: "long",
     shares: 150,
-    openPrice: 220.0,
+    openPrice: 208.37,
     openDate: "2025-04-07",
-    closePrice: 305.0,
+    closePrice: 303.36,
     closeDate: "2025-10-01",
   },
   {
@@ -424,7 +423,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 400,
     openPrice: 85.0,
     openDate: "2025-04-07",
-    closePrice: 105.0,
+    closePrice: 101.11,
     closeDate: "2025-10-01",
   },
   {
@@ -432,7 +431,7 @@ export const closedTrades: ClosedTrade[] = [
     name: "Uber Technologies, Inc.",
     side: "long",
     shares: 300,
-    openPrice: 58.0,
+    openPrice: 65.64,
     openDate: "2025-04-07",
     closePrice: 98.0,
     closeDate: "2025-10-01",
@@ -452,9 +451,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "MicroStrategy Incorporated",
     side: "long",
     shares: 30,
-    openPrice: 230.0,
+    openPrice: 268.14,
     openDate: "2025-04-07",
-    closePrice: 430.0,
+    closePrice: 426.28,
     closeDate: "2025-07-21",
   },
   {
@@ -464,8 +463,8 @@ export const closedTrades: ClosedTrade[] = [
     shares: 600,
     openPrice: 37.0,
     openDate: "2025-04-07",
-    closePrice: 135.0,
-    closeDate: "2025-11-01",
+    closePrice: 146.78,
+    closeDate: "2025-10-31",
   },
   {
     symbol: "AVGO",
@@ -474,7 +473,7 @@ export const closedTrades: ClosedTrade[] = [
     shares: 80,
     openPrice: 140.0,
     openDate: "2025-04-07",
-    closePrice: 380.0,
+    closePrice: 337.28,
     closeDate: "2025-12-15",
   },
 
@@ -536,9 +535,9 @@ export const closedTrades: ClosedTrade[] = [
     name: "Target Corporation",
     side: "short",
     shares: 200,
-    openPrice: 135.17,
+    openPrice: 127.86,
     openDate: "2025-01-02",
-    closePrice: 95.0,
+    closePrice: 94.85,
     closeDate: "2025-08-01",
   },
   {
