@@ -136,9 +136,10 @@ export default function TradesClient() {
           )}
           {closed.map((t) => {
             const up = t.profit >= 0;
+            const isLong = t.side === "long";
             return (
               <div
-                key={`${t.symbol}-${t.sellDate}`}
+                key={`${t.symbol}-${t.closeDate}-${t.side}`}
                 className="rounded-3xl p-4"
                 style={{ background: "var(--vx-surface)", border: "1px solid var(--vx-border)" }}
               >
@@ -147,7 +148,7 @@ export default function TradesClient() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-[15px]">{t.symbol}</span>
-                      <PositionBadge side="long" />
+                      <PositionBadge side={t.side} />
                     </div>
                     <div className="text-xs truncate" style={{ color: "var(--vx-text-faint)" }}>
                       {t.name}
@@ -167,44 +168,34 @@ export default function TradesClient() {
                 >
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      Продано
+                      {isLong ? "Куплено" : "Продано в шорт"}
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
-                      {t.shares} шт. по {fmtUsd(t.sellPrice)}
+                      {t.shares} шт. по {fmtUsd(t.openPrice)}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      Дата продажи
+                      {isLong ? "Дата покупки" : "Дата открытия"}
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
-                      {fmtDate(t.sellDate)}
+                      {fmtDate(t.openDate)}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      Цена покупки
+                      {isLong ? "Продано" : "Выкуплено"}
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
-                      {fmtUsd(t.buyPrice)}
+                      {t.shares} шт. по {fmtUsd(t.closePrice)}
                     </div>
                   </div>
-                  {t.buyDate && (
-                    <div>
-                      <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                        Дата покупки
-                      </div>
-                      <div className="vx-num text-sm font-medium mt-0.5">
-                        {fmtDate(t.buyDate)}
-                      </div>
-                    </div>
-                  )}
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      Сумма продажи
+                      {isLong ? "Дата продажи" : "Дата закрытия"}
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
-                      {fmtUsd(t.proceeds)}
+                      {fmtDate(t.closeDate)}
                     </div>
                   </div>
                 </div>

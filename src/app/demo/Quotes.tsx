@@ -109,7 +109,7 @@ export default function Quotes() {
       </div>
 
       <p className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-        Котировки и логотипы — через Finnhub, обновляются каждые 30 секунд
+        Котировки и логотипы — через Finnhub, обновляются каждые 45 секунд
         (бесплатный тариф, возможна небольшая задержка).
       </p>
     </div>

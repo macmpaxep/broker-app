@@ -14,7 +14,7 @@ type Quote = {
 // (60 запросов/мин). Список вырос до WATCHLIST.length тикеров, поэтому TTL
 // увеличен: иначе частые опросы с нескольких вкладок выбьют лимит.
 let cache: { data: Quote[]; ts: number } | null = null;
-const CACHE_TTL_MS = 30_000;
+const CACHE_TTL_MS = 45_000;
 
 async function fetchQuote(symbol: string, apiKey: string): Promise<Quote> {
   const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(
