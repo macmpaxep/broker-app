@@ -3,6 +3,7 @@ export type ClosedTrade = {
   name: string;
   shares: number;
   buyPrice: number;
+  buyDate?: string;
   sellPrice: number;
   sellDate: string;
 };
@@ -27,6 +28,15 @@ export const closedTrades: ClosedTrade[] = [
     buyPrice: 0.69,
     sellPrice: 51.18,
     sellDate: "2025-10-13",
+  },
+  {
+    symbol: "PLTR",
+    name: "Palantir Technologies Inc.",
+    shares: 360,
+    buyPrice: 119.81,
+    buyDate: "2026-07-01",
+    sellPrice: 207.36,
+    sellDate: "2026-10-09",
   },
 ];
 

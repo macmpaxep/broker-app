@@ -26,4 +26,5 @@ export const WATCHLIST: WatchlistEntry[] = [
   { symbol: "PEP", name: "PepsiCo, Inc.", currentPrice: 150 },
   { symbol: "WMT", name: "Walmart Inc.", currentPrice: 95 },
   { symbol: "INTC", name: "Intel Corporation", currentPrice: 35 },
+  { symbol: "PLTR", name: "Palantir Technologies Inc.", currentPrice: 207.36 },
 ];

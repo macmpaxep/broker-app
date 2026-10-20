@@ -189,6 +189,16 @@ export default function TradesClient() {
                       {fmtUsd(t.buyPrice)}
                     </div>
                   </div>
+                  {t.buyDate && (
+                    <div>
+                      <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+                        Дата покупки
+                      </div>
+                      <div className="vx-num text-sm font-medium mt-0.5">
+                        {fmtDate(t.buyDate)}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
                       Сумма продажи
