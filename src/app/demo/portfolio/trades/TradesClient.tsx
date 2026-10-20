@@ -5,6 +5,7 @@ import Link from "next/link";
 import { closedTrades, withClosedMetrics } from "@/lib/trades";
 import { useDemoPortfolio } from "../../useDemoPortfolio";
 import Logo from "../../Logo";
+import PositionBadge from "../../PositionBadge";
 
 function fmtUsd(n: number) {
   return n.toLocaleString("en-US", {
@@ -92,7 +93,10 @@ export default function TradesClient() {
                 <Logo symbol={row.symbol} logo={profile?.logo} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-semibold text-[15px]">{row.symbol}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-semibold text-[15px]">{row.symbol}</span>
+                      <PositionBadge side="long" />
+                    </span>
                     <span className="vx-num font-semibold text-[15px] tabular-nums">
                       {fmtUsd(row.currentPrice)}
                     </span>
@@ -141,7 +145,10 @@ export default function TradesClient() {
                 <div className="flex items-center gap-3">
                   <Logo symbol={t.symbol} logo={profiles[t.symbol]?.logo} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-[15px]">{t.symbol}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-[15px]">{t.symbol}</span>
+                      <PositionBadge side="long" />
+                    </div>
                     <div className="text-xs truncate" style={{ color: "var(--vx-text-faint)" }}>
                       {t.name}
                     </div>

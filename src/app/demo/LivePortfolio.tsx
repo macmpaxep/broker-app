@@ -14,6 +14,7 @@ import { usePortfolioHistory, type CustomRange } from "./useHistory";
 import Logo from "./Logo";
 import TimeSeriesChart from "./TimeSeriesChart";
 import PeriodPicker from "./PeriodPicker";
+import PositionBadge from "./PositionBadge";
 
 function fmtUsd(n: number) {
   return n.toLocaleString("en-US", {
@@ -257,7 +258,10 @@ export default function LivePortfolio() {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-semibold text-[15px]">{row.symbol}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="font-semibold text-[15px]">{row.symbol}</span>
+                    <PositionBadge side="long" />
+                  </span>
                   <span className="vx-num font-semibold text-[15px] tabular-nums">
                     {fmtUsd(currentPriceFor(row.symbol))}
                   </span>
