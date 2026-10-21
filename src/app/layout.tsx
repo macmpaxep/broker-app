@@ -16,6 +16,17 @@ const body = Inter({
 export const metadata: Metadata = {
   title: "Vertex Capital — брокерская платформа",
   description: "Демонстрационный брокерский сайт на Next.js",
+  openGraph: {
+    title: "Vertex Capital — брокерская платформа",
+    description: "Демонстрационный брокерский сайт на Next.js",
+    images: ["/trade-preview.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vertex Capital — брокерская платформа",
+    description: "Демонстрационный брокерский сайт на Next.js",
+    images: ["/trade-preview.jpg"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

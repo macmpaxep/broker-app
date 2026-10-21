@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const features = [
   {
@@ -80,6 +81,15 @@ export default function Home() {
               Узнать больше
             </a>
           </div>
+          <Image
+            src="/trade-preview.jpg"
+            alt="Пример закрытой сделки в демо-кабинете Vertex Capital"
+            width={1170}
+            height={1129}
+            priority
+            className="w-full max-w-sm rounded-3xl mt-6"
+            style={{ border: "1px solid var(--vx-border)" }}
+          />
         </section>
 
         <section
