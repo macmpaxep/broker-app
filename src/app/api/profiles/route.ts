@@ -13,21 +13,25 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const BATCH_SIZE = 25;
 const BATCH_DELAY_MS = 1100;
 
-async function fetchProfile(symbol: string, apiKey: string): Promise<Profile> {
+async function fetchProfile(symbol: string, apiKey: string): Promise<Profile & { _debug?: string }> {
   const url = `https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(
     symbol
   )}&token=${apiKey}`;
   try {
     const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Finnhub ${symbol}: HTTP ${res.status}`);
-    const json = (await res.json()) as { logo?: string; name?: string };
+    const text = await res.text();
+    if (!res.ok) {
+      return { symbol, logo: null, name: null, _debug: `HTTP ${res.status}: ${text.slice(0, 200)}` };
+    }
+    const json = JSON.parse(text) as { logo?: string; name?: string };
     return {
       symbol,
       logo: json.logo || null,
       name: json.name || null,
+      _debug: json.logo ? undefined : `empty response: ${text.slice(0, 200)}`,
     };
-  } catch {
-    return { symbol, logo: null, name: null };
+  } catch (e) {
+    return { symbol, logo: null, name: null, _debug: `fetch threw: ${String(e)}` };
   }
 }
 
