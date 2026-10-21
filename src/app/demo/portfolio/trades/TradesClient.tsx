@@ -168,6 +168,14 @@ export default function TradesClient() {
                 >
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+                      {isLong ? "Продано" : "Куплено"}
+                    </div>
+                    <div className="vx-num text-sm font-medium mt-0.5">
+                      {t.shares} шт. по {fmtUsd(t.closePrice)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
                       Дата открытия
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
@@ -176,10 +184,10 @@ export default function TradesClient() {
                   </div>
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      {isLong ? "Куплено" : "Продано в шорт"}
+                      {isLong ? "Цена покупки" : "Цена продажи"}
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
-                      {t.shares} шт. по {fmtUsd(t.openPrice)}
+                      {fmtUsd(t.openPrice)}
                     </div>
                   </div>
                   <div>
@@ -192,10 +200,10 @@ export default function TradesClient() {
                   </div>
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      {isLong ? "Продано" : "Выкуплено"}
+                      {isLong ? "Сумма продажи" : "Сумма покупки"}
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
-                      {t.shares} шт. по {fmtUsd(t.closePrice)}
+                      {fmtUsd(t.proceeds)}
                     </div>
                   </div>
                 </div>
