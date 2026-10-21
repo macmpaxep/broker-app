@@ -168,6 +168,14 @@ export default function TradesClient() {
                 >
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
+                      Дата открытия
+                    </div>
+                    <div className="vx-num text-sm font-medium mt-0.5">
+                      {fmtDate(t.openDate)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
                       {isLong ? "Куплено" : "Продано в шорт"}
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
@@ -176,10 +184,10 @@ export default function TradesClient() {
                   </div>
                   <div>
                     <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      {isLong ? "Дата покупки" : "Дата открытия"}
+                      Дата закрытия
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
-                      {fmtDate(t.openDate)}
+                      {fmtDate(t.closeDate)}
                     </div>
                   </div>
                   <div>
@@ -188,14 +196,6 @@ export default function TradesClient() {
                     </div>
                     <div className="vx-num text-sm font-medium mt-0.5">
                       {t.shares} шт. по {fmtUsd(t.closePrice)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs" style={{ color: "var(--vx-text-faint)" }}>
-                      {isLong ? "Дата продажи" : "Дата закрытия"}
-                    </div>
-                    <div className="vx-num text-sm font-medium mt-0.5">
-                      {fmtDate(t.closeDate)}
                     </div>
                   </div>
                 </div>
